@@ -1,0 +1,21 @@
+agf_treatment,mean,sd,CI_lower,CI_upper
+"10m alleys, 50 years to clearfell",0.8,0,0.8,0.8
+"10m alleys, 60 years to clearfell",0.8,0,0.8,0.8
+"10m alleys, 70 years to clearfell",0.8,0,0.8,0.8
+"10m alleys, 80 years to clearfell",0.8,0,0.8,0.8
+"20m alleys, 50 years to clearfell",0.9,0,0.9,0.9
+"20m alleys, 60 years to clearfell",0.9,0,0.9,0.9
+"20m alleys, 70 years to clearfell",0.9,0,0.9,0.9
+"20m alleys, 80 years to clearfell",0.9,0,0.9,0.9
+"30m alleys, 50 years to clearfell",0.9333333333333333,0,0.9333333333333333,0.9333333333333333
+"30m alleys, 60 years to clearfell",0.9333333333333333,0,0.9333333333333333,0.9333333333333333
+"30m alleys, 70 years to clearfell",0.9333333333333333,0,0.9333333333333333,0.9333333333333333
+"30m alleys, 80 years to clearfell",0.9333333333333333,0,0.9333333333333333,0.9333333333333333
+"40m alleys, 50 years to clearfell",0.95,0,0.95,0.95
+"40m alleys, 60 years to clearfell",0.95,0,0.95,0.95
+"40m alleys, 70 years to clearfell",0.95,0,0.95,0.95
+"40m alleys, 80 years to clearfell",0.95,0,0.95,0.95
+"Fenceline, 50 years to clearfell",1,0,1,1
+"Fenceline, 60 years to clearfell",1,0,1,1
+"Fenceline, 70 years to clearfell",1,0,1,1
+"Fenceline, 80 years to clearfell",1,0,1,1
