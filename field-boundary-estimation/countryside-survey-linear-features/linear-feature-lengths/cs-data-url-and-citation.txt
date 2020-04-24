@@ -1,0 +1,16 @@
+Website URL:
+https://catalogue.ceh.ac.uk/documents/28eb9005-7154-4207-b086-e3bdcd61de4a
+
+Citations:
+
+1984
+Barr, C.J.; Bunce, R.G.H.; Maskell, L.C.; Norton, L.R.; Scott, R.J.; Scott, W.A.; Smart, S. M.; Stuart, R.C.; Whittaker, H.A.; Wood, C.M.; Wright, S.M. (2014). Countryside Survey 1984 estimates of linear feature lengths in Great Britain. NERC Environmental Information Data Centre. https://doi.org/10.5285/271d398c-29de-4ff9-ba68-1b8e0621c6ee
+
+1990
+Barr, C.J.; Bunce, R.G.H.; Clarke, R.T.; Gillespie, M.K.; Hallam, C.J.; Howard, D.C.; Maskell, L.C.; Ness, M.J.; Norton, L.R.; Scott, R.J.; Scott, W.A.; Smart, S.M.; Stuart, R.C.; Wood, C.M.; Wright, S.M. (2014). Countryside Survey 1990 estimates of linear feature lengths in Great Britain. NERC Environmental Information Data Centre. https://doi.org/10.5285/ebbd1ba0-4497-4c80-891a-34ef3b8989cd
+
+1998
+Barr, C.J.; Bunce, R.G.H.; Clarke, R.T.; Gillespie, M.K.; Howard, D.C.; Maskell, L.C.; Norton, L.R.; Scott, R.J.; Scott, W.A.; Smart, S.M.; Stuart, R.C.; Watkins, J.W. ; Wood, C.M.; Wright, S.M. (2014). Countryside Survey 1998 estimates of linear feature lengths in Great Britain. NERC Environmental Information Data Centre. https://doi.org/10.5285/59422890-c8d3-49b8-b17e-4f5062475140
+
+2007
+Brown, M.J.; Bunce, R.G.H.; Carey, P.D.; Chandler, K.; Crowe, A.; Maskell, L.C.; Norton, L.R.; Scott, R.J.; Scott, W.A.; Smart, S.M.; Stuart, R.C.; Wood, C.M.; Wright, S.M. (2014). Countryside Survey 2007 estimates of linear feature lengths in Great Britain. NERC Environmental Information Data Centre. https://doi.org/10.5285/e687330b-a0f7-45a1-b58c-398e67da3028
