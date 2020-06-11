@@ -29,7 +29,8 @@ Ras_crop_minfrac <- raster(find_onedrive(dir = bigdata_repo, path = "Created ras
 Brk_soil <- stack(
   raster(find_onedrive(dir = bigdata_repo, path = "SoilGrids 5km/Sand content/Fixed/SNDPPT_M_sl4_5km_ll.tif")), # sand %
   raster(find_onedrive(dir = bigdata_repo, path = "SoilGrids 5km/Silt content/Fixed/SLTPPT_M_sl4_5km_ll.tif")), # silt %
-  raster(find_onedrive(dir = bigdata_repo, path = "SoilGrids 5km/Clay content/Fixed/CLYPPT_M_sl4_5km_ll.tif")) # clay %
+  raster(find_onedrive(dir = bigdata_repo, path = "SoilGrids 5km/Clay content/Fixed/CLYPPT_M_sl4_5km_ll.tif")), # clay %
+  raster(find_onedrive(dir = bigdata_repo, path = "SoilGrids 5km/Soil pH/Fixed/PHIHOX_M_sl4_5km_ll.tif"))
 )
 
 # crop areas and yields
@@ -62,10 +63,32 @@ for(i in 1:length(file.names)){
 }
 rm(readdir, file.names, readpath, i, uk_crops)
 
+# create monthly precipitation dataset
+Brk_clim <- raster::stack()
+for(i in 1:12){
+  path <- paste0(find_onedrive(dir = bigdata_repo,
+                               path = "WorldClim data/Precipitation (mm)/wc2.0_5m_prec_"),
+                 formatC(i, width=2, flag="0"),
+                 ".tif")
+  x <- raster(path)
+  Brk_clim <- addLayer(Brk_clim, x)
+}
+
+for(i in 1:12){
+  path <- paste0(find_onedrive(dir = bigdata_repo,
+                               path = "WorldClim data/Average temperature (oC)/wc2.0_5m_tavg_"),
+                 formatC(i, width=2, flag="0"),
+                 ".tif")
+  x <- raster(path)
+  Brk_clim <- addLayer(Brk_clim, x)
+}
+rm(x, i, path)
+
 # crop and mask global datasets
 Brk_croparea <- Brk_croparea %>% crop(Shp_UK) %>% mask(Shp_UK)
 Brk_cropyield <- Brk_cropyield %>% crop(Shp_UK) %>% mask(Shp_UK)
 Brk_soil <- Brk_soil %>% crop(Shp_UK) %>% mask(Shp_UK)
+Brk_clim <- Brk_clim %>% crop(Shp_UK) %>% mask(Shp_UK)
 
 # crop and mask UK stuff — necessary to sort minor extent issues
 Ras_past_minfrac <- Ras_past_minfrac %>% crop(Shp_UK) %>% mask(Shp_UK)
@@ -75,44 +98,73 @@ Ras_pastyield <- Ras_pastyield %>% crop(Shp_UK) %>% mask(Shp_UK)
 Ras_past_workable <- Ras_past_workable %>% crop(Shp_UK) %>% mask(Shp_UK)
 
 # stacks for crops and pasture
-Brk_crop <- stack(Brk_soil, Ras_crop_minfrac, Brk_croparea, Brk_cropyield)
-Brk_pasture <- stack(Brk_soil, Ras_past_minfrac, Ras_pastarea, Ras_pastyield, Ras_past_workable)
+#Brk_crop <- stack(Brk_soil, Ras_crop_minfrac, Ras_pastyield, Ras_past_workable, Brk_croparea, Brk_cropyield) # includes pasture so as to be able to include lowland pasture here
+#Brk_pasture <- stack(Brk_soil, Ras_past_minfrac, Ras_pastarea, Ras_pastyield, Ras_past_workable)
+
+Brk_main <- stack(Brk_soil, Brk_clim, Ras_crop_minfrac, Ras_past_minfrac, Ras_pastarea, Ras_pastyield, Ras_past_workable, Brk_croparea, Brk_cropyield)
 
 # remove all preliminary/original variables
-rm(Ras_past_minfrac, Ras_crop_minfrac, Ras_pastarea, Ras_pastyield, Ras_past_workable, Brk_croparea, Brk_cropyield, Brk_soil)
+rm(Ras_past_minfrac, Ras_crop_minfrac, Ras_pastarea, Ras_pastyield, Ras_past_workable, Brk_croparea, Brk_cropyield, Brk_soil, Brk_clim)
 
 #####################################
 # build crop base data frame
 #####################################
 
 # convert to data frame
-Dat_crop <- Brk_crop %>%
+Dat_main <- Brk_main %>%
   as.data.frame(xy = T) %>%
-  as_tibble() %>%
+  as_tibble()
+
+Dat_prec <- Dat_main %>%
+  select(wc2.0_5m_prec_01:wc2.0_5m_prec_12)
+
+# calculate MAP + MAT and drop monthly vars
+Dat_main <- Dat_main %>%
+  mutate(map = rowSums(Dat_main %>% select(wc2.0_5m_prec_01:wc2.0_5m_prec_12)),
+         mat = rowMeans(Dat_main %>% select(wc2.0_5m_tavg_01:wc2.0_5m_tavg_12))) %>%
+  select(-(wc2.0_5m_prec_01:wc2.0_5m_tavg_12))
+
+# rename core vars and gather
+Dat_main <- Dat_main %>% 
   rename(sand = SNDPPT_M_sl4_5km_ll,
          silt = SLTPPT_M_sl4_5km_ll,
          clay = CLYPPT_M_sl4_5km_ll,
-         min_frac = UK.crop.fraction.not.under.peat.10km.CLC.based.WGS84) %>%
+         pH = PHIHOX_M_sl4_5km_ll,
+         min_frac_crop = UK.crop.fraction.not.under.peat.10km.CLC.based.WGS84, # use this for pasture too since we're focusing on lowland/tilled pasture
+         min_frac_grass = UK.pasture.fraction.not.under.peat.10km.CLC.based.WGS84,
+         area_grassland = UK.pasture.area.10km.CLC.based.WGS84.2,
+         yield_pasture = UK.pasture.yield.RB209.10km,
+         phys_area_pasture = UK.pasture.area.10km.CLC.based.WGS84.lowland.workable) %>%
   drop_na(sand) %>%
-  gather(-(x:min_frac), key = "key", value = "value")
+  mutate(area_upland = (area_grassland - phys_area_pasture)* 10^6 / 10^4, # upland pasture in ha
+         phys_area_pasture = phys_area_pasture * 10^6 / 10^4, # convert from km2 to ha before gathering
+         pH = pH / 10) %>% # it's x10 in original raster
+  select(-area_grassland) %>%
+  gather(-c(x:min_frac_grass, area_upland, mat, map), key = "key", value = "value")
 
-Dat_crop <- Dat_crop %>%
+# spread metrics
+Dat_main <- Dat_main %>%
   mutate(metric = key %>% str_extract("^phys_area|^yield"),
          crop = key %>% str_replace_all("phys_area_|yield_", "")) %>%
   select(-key) %>%
   spread(key = metric, value = value)
 
 # final na drop and rename
-Dat_crop <- Dat_crop %>%
+Dat_main <- Dat_main %>%
   drop_na(phys_area, yield) %>%
+  #filter(phys_area != 0) %>% # necessary only for pasture -- some entries have +ve yield w/ 0 area -- artefect of calculation method for this layer
   rename(area_ha = phys_area,
          yield_tha = yield) %>%
-  mutate(min_frac = ifelse(is.na(min_frac), mean(min_frac, na.rm = T), min_frac))
+  mutate(min_frac_crop = ifelse(is.na(min_frac_crop), mean(min_frac_crop, na.rm = T), min_frac_crop),
+         min_frac_grass = ifelse(is.na(min_frac_grass), mean(min_frac_grass, na.rm = T), min_frac_grass))
 
 # adjust crop area to mineral fraction only
-Dat_crop <- Dat_crop %>%
-  mutate(area_ha = area_ha * min_frac) %>%
-  select(-min_frac)
+Dat_main <- Dat_main %>%
+  mutate(area_ha = ifelse(crop == "pasture",
+                          area_ha * min_frac_grass,
+                          area_ha * min_frac_crop),
+         area_upland = area_upland * min_frac_grass)%>%
+  select(-min_frac_crop, -min_frac_grass)
 
 #####################################
 # original crop sale values
@@ -122,15 +174,98 @@ Dat_crop <- Dat_crop %>%
 # for grass, estimate is mean production cost from FMH 17/18
 # linseed uses OSR values, potatoes assumes dual purpose and price is weighted according to relative yields
 # vegetables takes data for potatoes — very similar to most veg prices
-Dat_saleval <- tibble(crop = Dat_crop %>% pull(crop) %>% unique(),
-                      maincrop_saleval = c(145, 155, 325, 113, 200, 325, 113, 165),
-                      bycrop_saleval = c(55, 50, 0, 0, 0, 0, 0, 50), # secondary crop e.g. straw
-                      bycrop_ratio = c(0.55, 0.60, 0, 0, 0, 0, 0, 0.53)) # ratio of secondary crop to main crop yield
+Dat_saleval <- tibble(crop = Dat_main %>% pull(crop) %>% unique(),
+                      maincrop_saleval = c(22.5, 145, 155, 325, 113, 200, 325, 113, 165),
+                      bycrop_saleval = c(0, 55, 50, 0, 0, 0, 0, 0, 50), # secondary crop e.g. straw
+                      bycrop_ratio = c(0, 0.55, 0.60, 0, 0, 0, 0, 0, 0.53)) # ratio of secondary crop to main crop yield
+
+add_saleval <- function(df){
+  df %>%
+    left_join(Dat_saleval, by = "crop") %>%
+    mutate(croprev_gbp = (yield_tha * maincrop_saleval + yield_tha * bycrop_ratio * bycrop_saleval) * area_ha) %>%
+    select(-maincrop_saleval, -bycrop_ratio, -bycrop_saleval)
+}
 
 # join sale values to main data
-Dat_crop <- Dat_crop %>%
-  left_join(Dat_saleval, by = "crop") %>%
-  mutate(croprev_gbp = yield_tha * maincrop_saleval + yield_tha * bycrop_ratio * bycrop_saleval) %>%
-  select(-maincrop_saleval, -bycrop_ratio, -bycrop_saleval)
+Dat_main <- Dat_main %>%
+  add_saleval()
+
+#####################################
+# calculate tree NPP according to Del Grosso et al. 2008
+#####################################
+
+# above ground net primary productivity equation, pg 2120
+add_tree_anpp <- function(df){
+  df %>%
+    mutate(fmap = 0.1665 * map^1.185 / exp(0.000414 * map),
+           fmat = 3139 / (1 + exp(2.2 - 0.0307 * mat)),
+           tree_anpp = ifelse(fmap < fmat, fmap, fmat)) %>%
+    select(-map, -mat, -fmap, -fmat)
+}
+
+Dat_main <- Dat_main %>%
+  add_tree_anpp()
+
+Dat_main %>%
+  ggplot(aes(x = x, y = y, fill = tree_anpp)) +
+  geom_raster() +
+  coord_quickmap() +
+  theme_void()
+
+Dat_main %>%
+  ggplot(aes(x = tree_anpp)) +
+  geom_histogram()
+
+#####################################
+# add C per tree estimation
+#####################################
+Dat_row_agf <- read_rds("row-agroforestry-data-processing/row-agroforestry-data-clean.rds")
+
+#####################################
+# add field boundary lengths
+#####################################
 
 
+
+
+
+#
+Dat_nest <- Dat_nest %>%
+  mutate(crop_base = map(crop_base, ~add_saleval(.x)))
+
+Dat_nest <- Dat_main %>%
+  nest(crop_base = c("crop", "area_ha", "yield_tha", "croprev_gbp"))
+
+Dat_nest$crop_base[[469]]
+
+# OAK if > 25% clay, otherwise SAB
+# effects of altitude on growth --> see Coomes and Allen p1092 ## ARE WE GOING TO SEE ANY EFFECT AT CROPPING ALTITUDES? 
+
+# standardise yields by crop to mean = 1
+Dat_yieldrel <- Dat_main %>%
+  group_by(crop) %>%
+  mutate(yield_rel = yield_tha / mean(yield_tha))
+  
+Dat_yieldrel %>%
+  ggplot(aes(x = yield_rel)) +
+  geom_histogram() +
+  facet_wrap(~crop, nrow = 3)
+
+Dat_yieldrel <- Dat_yieldrel %>%
+  filter(crop %in% c("barley", "potato", "rapeseed", "vegetable", "wheat")) %>% # based on ggplot, sample size + modelled yield variation is sensible
+  group_by(x, y, sand, clay, pH) %>%
+  summarise(yield_rel = mean(yield_rel))
+
+Dat_yieldrel %>%
+  ggplot(aes(x = x, y = y, fill = yield_rel)) +
+  geom_raster() +
+  coord_quickmap()
+
+Dat_yieldrel %>%
+  ggplot(aes(x = clay, y = yield_rel)) +
+  geom_point(alpha = 0.1) +
+  geom_smooth(method = "lm")
+
+
+
+  
