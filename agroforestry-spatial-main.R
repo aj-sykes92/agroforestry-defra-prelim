@@ -187,25 +187,45 @@ Dat_crop <- Dat_crop %>%
 # original crop sale values
 #####################################
 
-# sale values for different crops from FMH 17/18, all in 2017 GBP
-# for grass, estimate is mean production cost from FMH 17/18
-# linseed uses OSR values, potatoes assumes dual purpose and price is weighted according to relative yields
+# sale values for different crops from FMH 19/20, all in 2019 GBP
+# for grass, estimate is mean production cost from FMH 19/20
+# cereals, other = oats
+# oil crops, other = OSR
+# potatoes assumes dual purpose and price is weighted according to relative yields
+# note potato costs very close to revenue — GM set to 0
 # vegetables takes data for potatoes — very similar to most veg prices
+# pulses, other = field beans
 Dat_saleval <- tibble(crop = Dat_crop %>% pull(crop) %>% unique(),
-                      maincrop_saleval = c(22.5, 145, 155, 325, 113, 200, 325, 113, 165),
-                      bycrop_saleval = c(0, 55, 50, 0, 0, 0, 0, 0, 50), # secondary crop e.g. straw
-                      bycrop_ratio = c(0, 0.55, 0.60, 0, 0, 0, 0, 0, 0.53)) # ratio of secondary crop to main crop yield
+                      maincrop_saleval = c(22.5, 135, 150, 330, 5090/45, 205, 330, 420, 150), # main crop sale value, gbp / tonne fw
+                      bycrop_saleval = c(0, 55, 50, 0, 0, 0, 0, 0, 50), # secondary crop e.g. straw sale value, gbp / tonne fw
+                      bycrop_ratio = c(0, 0.55, 0.60, 0, 0, 0, 0, 0, 0.53), # ratio of secondary crop to main crop yield
+                      varcosts_gbpha = c(NA, 433, 366, 393, NA, 273, 393, 1917, 488)) # variable costs per hectare, gbp
 
 add_saleval <- function(df){
   df %>%
     left_join(Dat_saleval, by = "crop") %>%
-    mutate(croprev_gbp = (yield_tha * maincrop_saleval + yield_tha * bycrop_ratio * bycrop_saleval) * area_ha) %>%
-    select(-maincrop_saleval, -bycrop_ratio, -bycrop_saleval)
+    mutate(croprev_gbp = (yield_tha * maincrop_saleval + yield_tha * bycrop_ratio * bycrop_saleval) * area_ha,
+           varcosts_gbp = ifelse(crop == "potato" | crop == "pasture", croprev_gbp, varcosts_gbpha * area_ha)) %>% # potato and pasture assume breakeven based on FMH data
+    select(-maincrop_saleval, -bycrop_ratio, -bycrop_saleval, -varcosts_gbpha)
 }
 
 # join sale values to main data
 Dat_crop <- Dat_crop %>%
   add_saleval()
+
+# add gm
+Dat_crop <- Dat_crop %>%
+  mutate(gm_gbp = croprev_gbp - varcosts_gbp,
+         gm_gbp = ifelse(gm_gbp < 0, 0, gm_gbp)) # adjust out negative values
+
+# check gms calculated with yields from spatial data
+# big spread in veg especially, but not out of bounds of FMH estimates
+Dat_crop %>%
+  #filter(crop != "vegetable") %>%
+  mutate(gm_ha = gm_gbp / area_ha) %>%
+  ggplot(aes(x = gm_ha)) +
+  geom_histogram() +
+  facet_wrap(~ crop)
 
 #####################################
 # calculate tree NPP according to Del Grosso et al. 2008
