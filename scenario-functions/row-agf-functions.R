@@ -1,19 +1,10 @@
 
 library(tidyverse)
+library(mc2d)
 
 #####################################
 # C per tree + vol per tree estimation
 #####################################
-
-Dat_crop <- read_rds("simulation-base-data/crop-base-data.rds")
-
-# dummy data, adjusted to 1 ha area per row to sensecheck aggregate calcs
-set.seed(2605)
-Dat_dummy <- Dat_crop %>%
-  sample_n(25, replace = F) %>%
-  mutate(croprev_gbp = croprev_gbp / area_ha,
-         area_ha = area_ha / area_ha)
-         
 
 add_tree_data <- function(df, felling_age){
   
@@ -61,14 +52,10 @@ add_tree_data <- function(df, felling_age){
   
 }
 
-# add_tree_data(Dat_crop, felling_age = 50) # works
-
-Dat_agf_row <- Dat_dummy %>% add_tree_data(felling_age = 50)
-
 #####################################
 # agroforestry system scaling
 #####################################
-scale_system <- function(Dat_crop, row_spacing){
+scale_system <- function(df, row_spacing){
   
   spacings <- read_rds("row-agroforestry-data-processing/row-agroforestry-data-clean.rds") %>%
     select(spp, agf_spacing_min, agf_spacing_max) %>%
@@ -76,25 +63,234 @@ scale_system <- function(Dat_crop, row_spacing){
     mutate(inrow_spacing_m = (agf_spacing_min + agf_spacing_max) / 2) %>%
     select(spp, inrow_spacing_m)
     
-  Dat_crop <- Dat_crop %>%
+  df <- df %>%
     left_join(spacings, by = "spp") %>%
     mutate(planted_length_m = 100 / row_spacing * 100 * area_ha,
            planted_area_ha = planted_length_m * 2 * 10^-4, # tree area in ha. Burgess et al. (2003) estimate 2m row width for trees
-           ntrees = planted_length_m / inrow_spacing_m * area_ha)
+           ntrees = planted_length_m / inrow_spacing_m,
+           area_impact = 1 - (planted_area_ha / area_ha))
   
-  return(Dat_crop)
+  return(df)
   
 }
 
-Dat_agf_row <- Dat_agf_row %>%
-  scale_system(row_spacing = 10)
-
 #####################################
-# crop yield impacts
+# crop yield and margin impacts
 #####################################
 
+add_crop_impacts <- function(df, row_spacing) {
+  
+  cropyield_loess <- read_rds("crop-yield-impacts/cropyield-loess-models.rds")
+  
+  yi_mode <- predict(cropyield_loess[[1]], newdata = row_spacing)
+  yi_min <- predict(cropyield_loess[[2]], newdata = row_spacing)
+  yi_max <- predict(cropyield_loess[[3]], newdata = row_spacing)
+  
+  ghi_mean <- mean(df$ghi)
+  ghi_sd <- sd(df$ghi)
+  
+  p_ghi <- pnorm(df$ghi, ghi_mean, ghi_sd)
+  p_yi <- qpert(p_ghi, min = yi_min, mode = yi_mode, max = yi_max)
+  
+  df <- df %>%
+    mutate(frac_yi = p_yi,
+           yield_tha_agf = yield_tha * frac_yi,
+           gm_gbp_agf = (croprev_gbp * frac_yi - varcosts_gbp) * area_impact)
+  
+  return(df)
+}
+
+#####################################
+# agroforestry cost and revenue
+#####################################
+
+# helper function to estimate timber price, based on Whiteman et al. (1991), adjusted for inflation
+timber_value <- function(spp, S){
+  # implement price curve equation from Whiteman et al. (1991) pg. 17
+  
+  # coefficients
+  sum_d <- ifelse(spp == "OK", 0.40 - 0.35, 0.42 - 0.35)
+  a <- 2.24
+  b <- 0.47
+  conv_fac_1990 <- 3.6780
+  P <- conv_fac_1990 * exp(a + sum_d) * S ^ b
+  
+  # adjust to GBP2017 using inflation factor (1990 - 2017) http://www.in2013dollars.com/1990-GBP-in-2017?amount=1
+  inf_fac <- 2.16
+  
+  # adjust
+  P_adj <- P * inf_fac
+  return(P_adj)
+}
+
+# discounting and annualisation function
+annualise <- function(tot_cost, lifespan, dr){
+  annual_cost <- tot_cost / ((1-(1/(1 + dr)^lifespan))/dr)
+  return(annual_cost)
+}
+
+add_agf_margins <- function(df, felling_age, discount_rate){
+  
+  # timber cost datasets
+  # Below is additional Monte Carlo for cost, using data from Burgess et al. (2003). Data assigned into vectors
+  # below are reported values from Burgess' cost analysis (pp. 33-34)
+  
+  MC_n <- 10^4
+  
+  # establishment costs in gbp
+  set_cost <- c(0.95, 1, 0.8, 0.6, 0.25) # purchase cost per set (young tree)
+  prot_cost <- c(0.22, 0.18, 0.24, 0.16) # protection cost per set
+  contmulch_cost <- c(0.1, 0.4) # continuous mulch application per m2 (tree area only)
+  indimulch_cost <- c(0.4, 0.47) # invividual mulch per tree
+  grass_cost <- 0.035 # grass sward establishment cost, per m2 (tree area)
+  
+  # establishment cost Monte Carlo
+  Dat_cost <- tibble(est_cost_tree =
+                       rpert(n = MC_n, mode = mean(set_cost), min = min(set_cost), max = max(set_cost)) +
+                       rpert(n = MC_n, mode = mean(prot_cost), min = min(prot_cost), max = max(prot_cost)) +
+                       runif(n = MC_n, min = min(indimulch_cost), max = max(indimulch_cost)),
+                     est_cost_m2 = 
+                       runif(n = MC_n, min = min(contmulch_cost), max = max(contmulch_cost)) +
+                       rep(grass_cost, n = MC_n)
+  )
+  
+  # establishment labour in hours. Total pruning labour is included here since it is not an annual cost.
+  set_lab <- c(1.5, 1.7, 2.1, 3) / 60 # planting labour per tree
+  prot_lab <- c(0.4, 0.7) / 60 # protection labour per tree
+  contmulchon_lab <- 1.7 / 60 # continuous mulch application labour per m2 (tree area)
+  contmulchoff_lab <- 1.5 / 60 # continuous mulch removal labour per m2 (tree area) (year 8)
+  indimulch_lab <- c(1.7, 2) / 60 # individual mulch per tree
+  grass_lab <- 0.5 / 60 # grass sward establishment labour, per m2
+  prune_lab <- 5 * c(4, 1.5, 1, 0.5, 15, 12, 4) / 60 # labour time for pruning, per tree. Takes longer as trees age. Burgess estimate 5 prunings in lifetime.
+  pruneremove_lab <- 5 * c(1, 4, 0.14) / 60 # labour time for pruned branch removal, per tree.
+  
+  # establishment labour Monte Carlo
+  Dat_cost <- Dat_cost %>%
+    mutate(
+      est_lab_tree =
+        rpert(n = MC_n, mode = mean(set_lab), min = min(set_lab), max = max(set_lab)) +
+        runif(n = MC_n, min = min(prot_lab), max = max(prot_lab)) +
+        runif(n = MC_n, min = min(indimulch_lab), max = max(indimulch_lab)) +
+        rpert(n = MC_n, mode = mean(prune_lab), min = min(prune_lab), max = max(prune_lab)) +
+        rpert(n = MC_n, mode = mean(pruneremove_lab), min = min(pruneremove_lab), max = max(pruneremove_lab)),
+      est_lab_m2 =
+        rep(contmulchon_lab, n = MC_n) +
+        rep(contmulchoff_lab, n = MC_n) +
+        rep(grass_lab, n = MC_n)
+    )
+  
+  # annual maintenance costs in ?
+  herb_cost <- c(0.15, 0.5) # herbicide cost per tree
+  
+  Dat_cost <- Dat_cost %>%
+    mutate(
+      maint_cost_tree =
+        runif(n = MC_n, min = min(herb_cost), max = max(herb_cost)),
+      maint_cost_m2 =
+        rep(0, n = MC_n)
+    )
+  
+  # annual maintenance labour in hours
+  herb_lab <- c(0.5, 0.2, 0.085, 0.06) / 60 # herbicide labour per m2
+  grasscut_lab <- c(0.3, 0.4, 0.6) / 60 # cutting grass between trees, per m2
+  treemaint_lab <- c(1.15, 2.3, 1.1, 4) / 60 # annual maintenance labour, per tree
+  
+  Dat_cost <- Dat_cost %>%
+    mutate(
+      maint_lab_tree =
+        rpert(n = MC_n, mode = mean(treemaint_lab), min = min(treemaint_lab), max = max(treemaint_lab)),
+      maint_lab_m2 =
+        rpert(n = MC_n, mode = mean(herb_lab), min = min(herb_lab), max = max(herb_lab)) +
+        rpert(n = MC_n, mode = mean(grasscut_lab), min = min(grasscut_lab), max = max(grasscut_lab))
+    )
+  
+  # convert and select down
+  Dat_cost <- Dat_cost %>%
+    mutate(lab_rate = rpert(n = MC_n, min = 12, mode = 12.8, max = 14.05), # fmh 19/20 skilled labour hourly rate
+           est_cost_tree = est_cost_tree + est_lab_tree * lab_rate,
+           est_cost_m2 = est_cost_m2 + est_lab_m2 * lab_rate,
+           maint_cost_tree = maint_cost_tree + maint_lab_tree * lab_rate,
+           maint_cost_m2 = maint_cost_m2 + maint_lab_m2 * lab_rate) %>%
+    select(-est_lab_tree, -est_lab_m2, -maint_lab_tree, -maint_lab_m2, -lab_rate) %>%
+    mutate(cost_tree =
+             maint_cost_tree +
+             annualise(est_cost_tree,
+                       lifespan = felling_age,
+                       dr = discount_rate),
+           cost_m2 =
+             maint_cost_m2 +
+             annualise(est_cost_m2,
+                       lifespan = felling_age,
+                       dr = discount_rate)) %>%
+    select(-maint_cost_tree, -est_cost_tree, -maint_cost_m2, -est_cost_m2)
+  
+  cost_tree <- Dat_cost %>% pull(cost_tree) %>% mean()
+  cost_ha <- (Dat_cost %>% pull(cost_m2) %>% mean()) * 10^4
+  
+  
+  # add in economics values to main Monte Carlo (scaled by tree numbers/area) and adjust from GBP2003 to GBP2017 http://www.in2013dollars.com/2003-GBP-in-2017?amount=1
+  # including stochastic adjustment factor for timber prices based on variation in the real-terms FPI, 1990-2017 (1990 was a real-terms all-time high for standing timber in this period, hence max is 1)
+  # see data in Excel workbook [Forestry Price Indices adjustment for Whiteman model.xlsx]
+  
+  #inflation factor for 2003 economic values
+  inf_fac <- 1.50
+  
+  # price index adjustment factor
+  pi_fac <- 0.513
+  
+  
+  # timber revenue
+  df <- df %>%
+    mutate(timbrev_gbp = timber_value(spp = spp, S = vol_tree) * ntrees * vol_tree * pi_fac %>%
+             annualise(lifespan = felling_age, dr = discount_rate),
+           timbcost_gbp = cost_tree * ntrees + cost_ha * planted_area_ha,
+           timbgm_gbp = timbrev_gbp - timbcost_gbp)
+  
+  return(df)
+}
+  
+#####################################
+# final estimates of carbon sequestration
+#####################################
+
+add_abatement <- function(df, felling_age){
+  df %>%
+    mutate(tree_co2_tyear = ntrees * CO2_tree / felling_age,
+           # add in estimate of below ground C sequestration (from Aertsens et al., 2013; see Excel workbook [Belowground C per tree.xlsx])
+           soil_co2_tyear = (ntrees * 3.97 * 10^-3 * 44/12 * 20) / felling_age, # convert from IPCC 20yr to map evenly over lifespan
+           co2_tyear = tree_co2_tyear + soil_co2_tyear) %>%
+    select(-tree_co2_tyear, -soil_co2_tyear)
+}
+
+#####################################
+# total cost, abatement and MAC
+#####################################
+
+calc_mac <- function(df){
+  df %>%
+    mutate(ar_tha = co2_tyear / area_ha,
+           totcost_gbp = (gm_gbp_agf - gm_gbp) + timbgm_gbp,
+           mac_gbp_tco2 = -totcost_gbp / co2_tyear)
+}
+
+#####################################
+# wrapper function
+#####################################
+
+build_row_agf <- function(felling_age, row_spacing, discount_rate){
+  
+  read_rds("simulation-base-data/crop-base-data.rds") %>%
+    add_tree_data(felling_age) %>%
+    scale_system(row_spacing) %>%
+    add_crop_impacts(row_spacing) %>%
+    add_agf_margins(felling_age, discount_rate) %>%
+    add_abatement(felling_age) %>%
+    calc_mac() %>%
+    return()
+  
+}
 
 
-         
-?loess
+
+
   
