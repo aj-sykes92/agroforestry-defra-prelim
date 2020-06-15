@@ -195,18 +195,49 @@ Dat_crop <- Dat_crop %>%
 # note potato costs very close to revenue — GM set to 0
 # vegetables takes data for potatoes — very similar to most veg prices
 # pulses, other = field beans
+
 Dat_saleval <- tibble(crop = Dat_crop %>% pull(crop) %>% unique(),
-                      maincrop_saleval = c(22.5, 135, 150, 330, 5090/45, 205, 330, 420, 150), # main crop sale value, gbp / tonne fw
-                      bycrop_saleval = c(0, 55, 50, 0, 0, 0, 0, 0, 50), # secondary crop e.g. straw sale value, gbp / tonne fw
-                      bycrop_ratio = c(0, 0.55, 0.60, 0, 0, 0, 0, 0, 0.53), # ratio of secondary crop to main crop yield
+                      maincrop_saleval = c(NA, 135, 150, 330, 5090/45, 205, 330, 420, 150), # main crop sale value, gbp / tonne fw
+                      bycrop_saleval = c(NA, 55, 50, 0, 0, 0, 0, 0, 50), # secondary crop e.g. straw sale value, gbp / tonne fw
+                      bycrop_ratio = c(NA, 0.55, 0.60, 0, 0, 0, 0, 0, 0.53), # ratio of secondary crop to main crop yield
                       varcosts_gbpha = c(NA, 433, 366, 393, NA, 273, 393, 1917, 488)) # variable costs per hectare, gbp
 
 add_saleval <- function(df){
-  df %>%
+  
+  # for all arable crops
+  df <- df %>%
     left_join(Dat_saleval, by = "crop") %>%
     mutate(croprev_gbp = (yield_tha * maincrop_saleval + yield_tha * bycrop_ratio * bycrop_saleval) * area_ha,
-           varcosts_gbp = ifelse(crop == "potato" | crop == "pasture", croprev_gbp, varcosts_gbpha * area_ha)) %>% # potato and pasture assume breakeven based on FMH data
+           varcosts_gbp = ifelse(crop == "potato", croprev_gbp, varcosts_gbpha * area_ha)) # potato assume breakeven based on FMH data
+
+  # special case for pasture data -- NA so far -- assuming used to graze cattle
+  
+  # grazing stats
+  grazyield <- df %>%
+    filter(crop == "pasture") %>%
+    pull(yield_tha)
+  
+  mean_grazyield <- mean(grazyield)
+  sd_grazyield <- sd(grazyield)
+  
+  cows_ha <- 379 / 152 # fmh pg 159, lowground suckler system, gm per ha / gm per cow
+  rev_cow <- 731 # revenue per cow
+  cost_cow <- 579 # cost per cow
+  
+  # add in grazing calculations
+  df <- df %>%
+    mutate(croprev_gbp = ifelse(crop == "pasture",
+                                rev_cow * cows_ha * yield_tha / mean_grazyield * area_ha,
+                                croprev_gbp),
+           varcosts_gbp = ifelse(crop == "pasture",
+                                 cost_cow * cows_ha * yield_tha / mean_grazyield * area_ha,
+                                 varcosts_gbp))
+  
+  # tidy up
+  df <- df %>%
     select(-maincrop_saleval, -bycrop_ratio, -bycrop_saleval, -varcosts_gbpha)
+  
+  return(df)
 }
 
 # join sale values to main data
@@ -221,7 +252,7 @@ Dat_crop <- Dat_crop %>%
 # check gms calculated with yields from spatial data
 # big spread in veg especially, but not out of bounds of FMH estimates
 Dat_crop %>%
-  #filter(crop != "vegetable") %>%
+  filter(crop != "vegetable") %>%
   mutate(gm_ha = gm_gbp / area_ha) %>%
   ggplot(aes(x = gm_ha)) +
   geom_histogram() +
