@@ -123,12 +123,6 @@ timber_value <- function(spp, S){
   return(P_adj)
 }
 
-# discounting and annualisation function
-annualise <- function(tot_cost, lifespan, dr){
-  annual_cost <- tot_cost / ((1-(1/(1 + dr)^lifespan))/dr)
-  return(annual_cost)
-}
-
 add_agf_margins <- function(df, felling_age, discount_rate){
   
   # timber cost datasets
@@ -214,14 +208,14 @@ add_agf_margins <- function(df, felling_age, discount_rate){
     select(-est_lab_tree, -est_lab_m2, -maint_lab_tree, -maint_lab_m2, -lab_rate) %>%
     mutate(cost_tree =
              maint_cost_tree +
-             annualise(est_cost_tree,
-                       lifespan = felling_age,
-                       dr = discount_rate),
+             annualise_cost(est_cost_tree,
+                            lifespan = felling_age,
+                            dr = discount_rate),
            cost_m2 =
              maint_cost_m2 +
-             annualise(est_cost_m2,
-                       lifespan = felling_age,
-                       dr = discount_rate)) %>%
+             annualise_cost(est_cost_m2,
+                            lifespan = felling_age,
+                            dr = discount_rate)) %>%
     select(-maint_cost_tree, -est_cost_tree, -maint_cost_m2, -est_cost_m2)
   
   cost_tree <- Dat_cost %>% pull(cost_tree) %>% mean()
@@ -242,7 +236,7 @@ add_agf_margins <- function(df, felling_age, discount_rate){
   # timber revenue
   df <- df %>%
     mutate(timbrev_gbp = timber_value(spp = spp, S = vol_tree) * ntrees * vol_tree * pi_fac %>%
-             annualise(lifespan = felling_age, dr = discount_rate),
+             annualise_return(real_int = felling_age, dr = discount_rate),
            timbcost_gbp = cost_tree * ntrees + cost_ha * planted_area_ha,
            timbgm_gbp = timbrev_gbp - timbcost_gbp)
   
@@ -277,9 +271,18 @@ calc_mac <- function(df){
 # wrapper function
 #####################################
 
-build_row_agf <- function(felling_age, row_spacing, discount_rate){
+build_row_agf <- function(felling_age, row_spacing, discount_rate,
+                          applies_to = c("barley",
+                                         "cereals_other",
+                                         "oil_crops_other",
+                                         "pasture",
+                                         "pulses_other",
+                                         "rapeseed",
+                                         "wheat")
+                          ) {
   
   read_rds("simulation-base-data/crop-base-data.rds") %>%
+    filter_crops(applies_to) %>%
     add_tree_data(felling_age) %>%
     scale_system(row_spacing) %>%
     add_crop_impacts(row_spacing) %>%
