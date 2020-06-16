@@ -64,6 +64,20 @@ ggplot(Dat_main, aes(x = period_end, y = CO2_per_tree, colour = yield_class %>% 
   facet_wrap(~full_name, nrow = 3) +
   geom_line()
 
+# segway -- yield model needed for shelter belts
+Dat_main %>%
+  filter(period_cntr <= 100,
+         period_cntr >= 30) %>%
+  ggplot(aes(x = C_cum_biomass, y = vol_ha_CUM)) +
+  geom_point(aes(colour = period_cntr, shape = spp)) +
+  geom_smooth(method = "lm")
+
+sb_lm <- lm(vol_ha_CUM ~ C_cum_biomass,
+            data = Dat_main %>%
+              filter(period_cntr <= 100,
+                     period_cntr >= 30))
+write_rds(sb_lm, "shelter-belt-data-preprocessing/vol-ha-lm.rds")
+
 # slim down to variables we need for analysis
 Dat_main <- Dat_main %>%
   select(spp, full_name, spacing, spacing_adj, yield_class, period_end, CO2_per_tree, dbh, vol_tree, mai, max_mai_age)
