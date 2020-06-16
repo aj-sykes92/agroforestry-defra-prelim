@@ -28,6 +28,10 @@ Ras_past_workable <- raster(find_onedrive(dir = bigdata_repo, path = "Created ra
 Ras_past_minfrac <- raster(find_onedrive(dir = bigdata_repo, path = "Created rasters/UK-pasture-fraction-not-under-peat-10km-CLC-based-WGS84.tif"))
 Ras_crop_minfrac <- raster(find_onedrive(dir = bigdata_repo, path = "Created rasters/UK-crop-fraction-not-under-peat-10km-CLC-based-WGS84.tif"))
 
+# SOC fractions
+Ras_past_soc <- raster(find_onedrive(dir = bigdata_repo, path = "Created rasters/UK-pasture-SOC-tonnes-ha-10km-CLC-SG250-WGS84.tif"))
+Ras_crop_soc <- raster(find_onedrive(dir = bigdata_repo, path = "Created rasters/UK-crop-SOC-tonnes-ha-10km-CLC-SG250-WGS84.tif"))
+
 # soil characteristics
 Brk_soil <- stack(
   raster(find_onedrive(dir = bigdata_repo, path = "SoilGrids 5km/Sand content/Fixed/SNDPPT_M_sl4_5km_ll.tif")), # sand %
@@ -99,6 +103,10 @@ Brk_clim <- Brk_clim %>% crop(Shp_UK) %>% mask(Shp_UK)
 # crop and mask UK stuff — necessary to sort minor extent issues
 Ras_past_minfrac <- Ras_past_minfrac %>% crop(Shp_UK) %>% mask(Shp_UK)
 Ras_crop_minfrac <- Ras_crop_minfrac %>% crop(Shp_UK) %>% mask(Shp_UK)
+
+Ras_past_soc <- Ras_past_soc %>% crop(Shp_UK) %>% mask(Shp_UK)
+Ras_crop_soc <- Ras_crop_soc %>% crop(Shp_UK) %>% mask(Shp_UK)
+
 Ras_pastarea <- Ras_pastarea %>% crop(Shp_UK) %>% mask(Shp_UK)
 Ras_pastyield <- Ras_pastyield %>% crop(Shp_UK) %>% mask(Shp_UK)
 Ras_past_workable <- Ras_past_workable %>% crop(Shp_UK) %>% mask(Shp_UK)
@@ -113,7 +121,7 @@ Ras_solar <- Ras_solar %>% crop(Shp_UK) %>% mask(Shp_UK)
 #Brk_crop <- stack(Brk_soil, Ras_crop_minfrac, Ras_pastyield, Ras_past_workable, Brk_croparea, Brk_cropyield) # includes pasture so as to be able to include lowland pasture here
 #Brk_pasture <- stack(Brk_soil, Ras_past_minfrac, Ras_pastarea, Ras_pastyield, Ras_past_workable)
 
-Brk_main <- stack(Brk_soil, Brk_clim, Ras_solar, Ras_crop_minfrac, Ras_past_minfrac, Ras_pastarea, Ras_pastyield, Ras_uplandyield, Ras_past_workable, Brk_croparea, Brk_cropyield)
+Brk_main <- stack(Brk_soil, Brk_clim, Ras_solar, Ras_crop_minfrac, Ras_past_minfrac, Ras_crop_soc, Ras_past_soc, Ras_pastarea, Ras_pastyield, Ras_uplandyield, Ras_past_workable, Brk_croparea, Brk_cropyield)
 
 # remove all preliminary/original variables
 rm(Ras_past_minfrac, Ras_crop_minfrac, Ras_pastarea, Ras_pastyield, Ras_uplandyield, Ras_past_workable, Brk_croparea, Brk_cropyield, Brk_soil, Brk_clim)
@@ -145,6 +153,8 @@ Dat_crop <- Dat_crop %>%
          ghi = GHI,
          min_frac_crop = UK.crop.fraction.not.under.peat.10km.CLC.based.WGS84, # use this for pasture too since we're focusing on lowland/tilled pasture
          min_frac_grass = UK.pasture.fraction.not.under.peat.10km.CLC.based.WGS84,
+         soc_crop = UK.crop.SOC.tonnes.ha.10km.CLC.SG250.WGS84,
+         soc_grass = UK.pasture.SOC.tonnes.ha.10km.CLC.SG250.WGS84,
          area_grassland = UK.pasture.area.10km.CLC.based.WGS84.2,
          yield_pasture = pasture.yield.tha.rb209.w.mod.nrate.57.wgs84.5km,
          yield_upland = pasture.yield.tha.rb209.w.mod.nrate.0.wgs84.5km,
@@ -154,7 +164,7 @@ Dat_crop <- Dat_crop %>%
          phys_area_pasture = phys_area_pasture * 10^6 / 10^4, # convert from km2 to ha before gathering
          pH = pH / 10) %>% # it's x10 in original raster
   select(-area_grassland) %>%
-  gather(-c(x:min_frac_grass, mat, map), key = "key", value = "value")
+  gather(-c(x:soc_grass, mat, map), key = "key", value = "value")
 
 # spread metrics
 Dat_crop <- Dat_crop %>%
@@ -173,48 +183,69 @@ Dat_crop <- Dat_crop %>%
          min_frac_grass = ifelse(is.na(min_frac_grass), mean(min_frac_grass, na.rm = T), min_frac_grass))
 
 # adjust crop area to mineral fraction only
+# drop any newly created zero areas
 Dat_crop <- Dat_crop %>%
   mutate(area_ha = ifelse(crop == "pasture" | crop == "upland",
                           area_ha * min_frac_grass,
-                          area_ha * min_frac_crop)) %>%
-  select(-min_frac_crop, -min_frac_grass)
+                          area_ha * min_frac_crop),
+         soc = ifelse(crop == "pasture" | crop == "upland",
+                       soc_grass,
+                       soc_crop)) %>%
+  select(-min_frac_crop, -min_frac_grass, -soc_grass, -soc_crop) %>%
+  filter(area_ha != 0)
 
-# split out upland
-Dat_upland <- Dat_crop %>%
-  filter(crop == "upland")
-
+#####################################
+# impute pasture yield nas for Northern Ireland (missing from model) and GHIs where missing
+#####################################
 Dat_crop <- Dat_crop %>%
-  filter(crop != "upland")
+  group_by(crop) %>%
+  mutate(yield_tha = ifelse(is.na(yield_tha),
+                            mean(yield_tha, na.rm = T),
+                            yield_tha),
+         ghi = ifelse(is.na(ghi),
+                      mean(ghi, na.rm = T),
+                      ghi)) %>%
+           ungroup()
 
 #####################################
 # original crop sale values
 #####################################
 
 # sale values for different crops from FMH 19/20, all in 2019 GBP
-# for grass, estimate is mean production cost from FMH 19/20
+# for grass, estimate is converted from livestock enterprise gms -- sheep on upland, beef on lowland
 # cereals, other = oats
 # oil crops, other = OSR
 # potatoes assumes dual purpose and price is weighted according to relative yields
 # note potato costs very close to revenue — GM set to 0
-# vegetables takes data for potatoes — very similar to most veg prices
+# vegetables = brassicas
 # pulses, other = field beans
 
 add_saleval <- function(df) {
   
+  #############################################################################
+  # add values for arable crops
+  #############################################################################
+  
   # sale values for arable crops
-  Dat_saleval <- tibble(crop = Dat_crop %>% pull(crop) %>% unique(),
-                        maincrop_saleval = c(NA, 135, 150, 330, 5090/45, 205, 330, 420, 150), # main crop sale value, gbp / tonne fw
-                        bycrop_saleval = c(NA, 55, 50, 0, 0, 0, 0, 0, 50), # secondary crop e.g. straw sale value, gbp / tonne fw
-                        bycrop_ratio = c(NA, 0.55, 0.60, 0, 0, 0, 0, 0, 0.53), # ratio of secondary crop to main crop yield
-                        varcosts_gbpha = c(NA, 433, 366, 393, NA, 273, 393, 1917, 488)) # variable costs per hectare, gbp
+  Dat_saleval <- tibble(crop = df %>% pull(crop) %>% unique(),
+                        maincrop_saleval = c(NA, NA, 135, 150, 330, 5090/45, 205, 330, 420, 150), # main crop sale value, gbp / tonne fw
+                        bycrop_saleval = c(NA, NA, 55, 50, 0, 0, 0, 0, 0, 50), # secondary crop e.g. straw sale value, gbp / tonne fw
+                        bycrop_ratio = c(NA, NA, 0.55, 0.60, 0, 0, 0, 0, 0, 0.53), # ratio of secondary crop to main crop yield
+                        varcosts_gbpha = c(NA, NA, 433, 366, 393, NA, 273, 393, 1917, 488)) # variable costs per hectare, gbp
   
   # for all arable crops
   df <- df %>%
     left_join(Dat_saleval, by = "crop") %>%
     mutate(croprev_gbp = (yield_tha * maincrop_saleval + yield_tha * bycrop_ratio * bycrop_saleval) * area_ha,
            varcosts_gbp = ifelse(crop == "potato", croprev_gbp, varcosts_gbpha * area_ha)) # potato assume breakeven based on FMH data
+  
+  # tidy up
+  df <- df %>%
+    select(-maincrop_saleval, -bycrop_ratio, -bycrop_saleval, -varcosts_gbpha)
 
+  #############################################################################
   # special case for pasture data -- NA so far -- assuming used to graze cattle
+  #############################################################################
   
   # grazing stats
   mean_grazyield <- df %>%
@@ -235,14 +266,9 @@ add_saleval <- function(df) {
                                  cost_cow * cows_ha * yield_tha / mean_grazyield * area_ha,
                                  varcosts_gbp))
   
-  # tidy up
-  df <- df %>%
-    select(-maincrop_saleval, -bycrop_ratio, -bycrop_saleval, -varcosts_gbpha)
-  
-  return(df)
-}
-
-add_saleval_upland <- function(df) {
+  #############################################################################
+  # special case for upland data -- NA so far -- assuming used to graze cattle
+  #############################################################################
   
   # livestock units per tonne grassland DM, pg 76 fmh 2019/20
   lu_tonne_dm <- 0.46 / 3
@@ -258,26 +284,24 @@ add_saleval_upland <- function(df) {
   
   # add to df
   df <- df %>%
-    mutate(croprev_gbp = rev_sheep * (lu_tonne_dm * yield_tha) / lu_sheep * area_ha, # revenue * fraction of 100 sheep enterprise per ha * area
-           varcosts_gbp = cost_sheep * (lu_tonne_dm * yield_tha) / lu_sheep * area_ha) # cost * fraction of 100 sheep enterprise per ha * area
-
+    mutate(croprev_gbp = ifelse(crop == "upland",
+                                rev_sheep * (lu_tonne_dm * yield_tha) / lu_sheep * area_ha, # revenue * fraction of 100 sheep enterprise per ha * area
+                                croprev_gbp),
+           varcosts_gbp = ifelse(crop == "upland",
+                                 cost_sheep * (lu_tonne_dm * yield_tha) / lu_sheep * area_ha, # cost * fraction of 100 sheep enterprise per ha * area
+                                 varcosts_gbp)) 
+  
+  # return
+  return(df)
 }
 
 # join sale values to main data
 Dat_crop <- Dat_crop %>%
   add_saleval()
 
-Dat_upland <- Dat_upland %>%
-  add_saleval_upland()
-
 # add gm
 Dat_crop <- Dat_crop %>%
-  mutate(gm_gbp = croprev_gbp - varcosts_gbp,
-         gm_gbp = ifelse(gm_gbp < 0, 0, gm_gbp)) # adjust out negative values
-
-Dat_upland <- Dat_upland %>%
-  mutate(gm_gbp = croprev_gbp - varcosts_gbp,
-         gm_gbp = ifelse(gm_gbp < 0, 0, gm_gbp)) # adjust out negative values
+  mutate(gm_gbp = croprev_gbp - varcosts_gbp)
 
 # check gms calculated with yields from spatial data
 # big spread in veg especially, but not out of bounds of FMH estimates
@@ -287,11 +311,6 @@ Dat_crop %>%
   ggplot(aes(x = gm_ha)) +
   geom_histogram() +
   facet_wrap(~ crop)
-
-Dat_upland %>%
-  mutate(gm_ha = gm_gbp / area_ha) %>%
-  ggplot(aes(x = gm_ha)) +
-  geom_histogram()
 
 #####################################
 # calculate tree NPP according to Del Grosso et al. 2008
@@ -303,21 +322,27 @@ add_tree_anpp <- function(df){
     mutate(fmap = 0.1665 * map^1.185 / exp(0.000414 * map),
            fmat = 3139 / (1 + exp(2.2 - 0.0307 * mat)),
            tree_anpp = ifelse(fmap < fmat, fmap, fmat)) %>%
-    select(-map, -mat, -fmap, -fmat)
+    select(-fmap, -fmat)
+}
+
+# total ground net primary productivity equation, pg 2120
+add_tree_tnpp <- function(df){
+  df %>%
+    mutate(fmap = 0.551 * map^1.055 / exp(0.000306 * map),
+           fmat = 2540 / (1 + exp(1.584 - 0.0622 * mat)),
+           tree_tnpp = ifelse(fmap < fmat, fmap, fmat)) %>%
+    select(-fmap, -fmat)
 }
 
 Dat_crop <- Dat_crop %>%
-  add_tree_anpp()
-
-Dat_upland <- Dat_upland %>%
-  add_tree_anpp()
+  add_tree_anpp() %>%
+  add_tree_tnpp() %>%
+  select(-map, -mat)
 
 #####################################
 # write out crop base data files
 #####################################
-
 write_rds(Dat_crop, "simulation-base-data/crop-base-data.rds")
-write_rds(Dat_upland, "simulation-base-data/upland-base-data.rds")
 
 # END
 
