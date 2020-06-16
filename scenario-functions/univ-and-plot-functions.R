@@ -1,4 +1,29 @@
 
+library(tidyverse)
+
+#####################################
+# filter crop functions
+#####################################
+filter_crops <- function(df, applies_to){
+  df %>%
+    filter(crop %in% applies_to)
+}
+
+#####################################
+# discounting and annualisation functions
+#####################################
+
+annualise_cost <- function(tot_cost, lifespan, dr){
+  annual_cost <- tot_cost / ((1-(1/(1 + dr)^lifespan))/dr)
+  return(annual_cost)
+}
+
+annualise_return <- function(tot_return, real_int, dr){
+  npv <- tot_return / (1 + dr) ^ real_int
+  annual_return <- npv / ((1-(1/(1 + dr)^real_int))/dr)
+  return(annual_return)
+}
+
 #####################################
 # MACC plot function
 #####################################
@@ -34,5 +59,19 @@ build_macc_plot <- function(df){
     theme_classic()
 }
 
-
+build_macc_map <- function(df){
+  Shp_UK <- shapefile(find_onedrive(dir = "GIS data repository", path = "DA shapefile/GBR_adm_shp/GBR_adm1.shp"))
+  
+  df %>%
+    group_by(x, y) %>%
+    summarise(co2_tyear = sum(co2_tyear, na.rm = T),
+              totcost_gbp = sum(totcost_gbp, na.rm = T)) %>%
+    ungroup() %>%
+    mutate(mac_gbp_tco2 = totcost_gbp / -co2_tyear) %>%
+    ggplot(aes(x = x, y = y, fill = mac_gbp_tco2)) +
+    geom_raster(aes(x = x, y = y, fill = mac_gbp_tco2)) +
+    geom_polygon(data = Shp_UK, aes(x = long, y = lat, group = group), colour = "black", fill = NA, size = 0.5) +
+    coord_quickmap() +
+    theme_void()
+}
 
