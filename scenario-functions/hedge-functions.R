@@ -35,7 +35,8 @@ hdg_env$add_boundary_data <- function(df){
   df <- df %>%
     left_join(fl_length, by = c("crop", "da_num")) %>%
     mutate(planted_length_m = fl_length * area_ha,
-           planted_area_ha = planted_length_m * 1.5 * 10^-4) %>%
+           planted_area_ha = planted_length_m * 1.5 * 10^-4,
+           yield_tha_agf = yield_tha) %>%
     select(-fl_length)
   
   return(df)
