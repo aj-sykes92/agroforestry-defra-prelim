@@ -2,60 +2,62 @@
 library(tidyverse)
 library(mc2d)
 
-# load base data
-Dat_crop <- read_rds("simulation-base-data/crop-base-data.rds")
-
-# dummy data, adjusted to 1 ha area per row to allow sensechecking aggregate calcs
-# use as needed
-set.seed(2605)
-Dat_dummy <- Dat_crop %>%
-  #filter_crops(applies_to = "upland") %>%
-  sample_n(25, replace = F) %>%
-  mutate(croprev_gbp = croprev_gbp / area_ha,
-         varcosts_gbp = varcosts_gbp / area_ha,
-         gm_gbp = gm_gbp / area_ha,
-         area_ha = area_ha / area_ha)
-
 ##########################
 # build scenarios
 ##########################
 
 # row agroforestry
+##########################
 source("scenario-functions/row-agf-functions.R")
 Dat_row1 <- build_row_agf(felling_age = 60, row_spacing = 30, discount_rate = 0.035)
-Dat_row1 %>% pull(mac_gbp_tco2) %>% qplot()
+Dat_row1 %>% pull(mac_gbp_tco2) %>% summary()
+
+Dat_row2 <- build_row_agf(felling_age = 80, row_spacing = 30, discount_rate = 0.035)
+Dat_row2 %>% pull(mac_gbp_tco2) %>% summary()
+
+Dat_row3 <- build_row_agf(felling_age = 60, row_spacing = 10, discount_rate = 0.035)
+Dat_row3 %>% pull(mac_gbp_tco2) %>% summary()
+
+##########################
 
 # shelter belt agroforestry
+##########################
 source("scenario-functions/shelter-belt-functions.R")
 
 # crib sheet for short spp names
-read_rds("shelter-belt-data-preprocessing/shelter-belt-data-clean.rds") %>%
-  distinct(spp, full_name)
+read_rds("shelter-belt-data-preprocessing/spp-name-crib-sheet.rds")
 
 Dat_sb1 <- build_sb_agf(spp_short = "SAB", felling_age = 60, discount_rate = 0.035)
-Dat_sb1 %>% pull(mac_gbp_tco2) %>% qplot()
+Dat_sb1 %>% pull(mac_gbp_tco2) %>% summary()
 
 Dat_sb2 <- build_sb_agf(spp_short = "SP", felling_age = 40, discount_rate = 0.035)
-Dat_sb2 %>% pull(mac_gbp_tco2) %>% qplot()
+Dat_sb2 %>% pull(mac_gbp_tco2) %>% summary()
 
+Dat_sb3 <- build_sb_agf(spp_short = "SS", felling_age = 40, discount_rate = 0.035)
+Dat_sb3 %>% pull(mac_gbp_tco2) %>% summary()
+
+##########################
 # fenceline agroforestry
+##########################
 source("scenario-functions/fenceline-agf-functions.R")
-
 Dat_fl1 <- build_fl_agf(felling_age = 60, discount_rate = 0.035)
 
+##########################
 # hedges
+##########################
 source("scenario-functions/hedge-functions.R")
 Dat_hdg1 <- build_hdg_agf(discount_rate = 0.035)
+##########################
 
 ##########################
 # plots
 ##########################
 source("scenario-functions/post-and-plot-functions.R")
 
+
 ##########################
 # UK full MACCs
 ##########################
-
 # row, arable + pasture
 Dat_row1 %>%
   build_macc_plot() +
@@ -88,7 +90,7 @@ ggsave("output-plots/uk-full-macc-shelt-belt-sp-40-y-180-10-250-m-035-dr.png", w
 # fenceline agroforestry
 Dat_fl1 %>%
   build_macc_plot() +
-  labs(title = "UK MAC curve for fencline agroforestry",
+  labs(title = "UK MAC curve for fenceline agroforestry",
        subtitle = "60 year lifespan\n3.5% DR")
 
 ggsave("output-plots/uk-full-macc-fenceline-agf-60-y-035-dr.png", width = 8, height = 5)
@@ -96,6 +98,8 @@ ggsave("output-plots/uk-full-macc-fenceline-agf-60-y-035-dr.png", width = 8, hei
 # hedges
 Dat_hdg1 %>%
   build_macc_plot()
+
+ggsave("output-plots/uk-full-macc-hedges-035-dr.png", width = 8, height = 5)
 
 ##########################
 # UK MACC maps
@@ -109,6 +113,7 @@ Dat_row1 %>%
 
 ggsave("output-plots/uk-mac-map-row-agf-30-m-60-y-035-dr.png", width = 8, height = 8)
 
+# shelterbelts
 Dat_sb1 %>%
   build_macc_map() +
   labs(title = "UK MAC map for shelter belt agroforestry",
@@ -116,10 +121,48 @@ Dat_sb1 %>%
 
 ggsave("output-plots/uk-mac-map-shelt-belt-sab-60-y-180-10-250-m-035-dr.png", width = 8, height = 8)
 
+# fenceline
 Dat_fl1 %>%
   build_macc_map()
 
-Dat_fl1 %>%
-  group_by(da_num) %>%
-  summarise(ar_tha = mean(ar_tha))
-  
+# hedges
+Dat_hdg1 %>%
+  build_macc_map()
+
+##########################
+# aggregate dataset / MACC
+##########################
+Dat_ag <- bind_rows(list(Intercropping = cheap_scale(Dat_row1, 0.1),
+                         Shelterbelts = even_scale(Dat_sb1, 0.1),
+                         `Fenceline tree planting` = cheap_scale(Dat_fl1, 0.1),
+                         `Hedge expansion` = cheap_scale(Dat_hdg1, 0.1)),
+                    .id = "sys_type")
+
+Dat_ag %>%
+  build_agmacc_plot() +
+  labs(title = "UK aggregated MAC curve for agroforestry",
+       fill = "Measure",
+       subtitle = "10% uptake\nShelterbelt with SAB spp.\nIntercropping @ 30m\n3.5% DR")
+
+ggsave("output-plots/uk-full-aggregated-macc.png", width = 8, height = 5)
+
+Dat_ag %>%
+  build_macc_plot() +
+  labs(title = "UK aggregated MAC curve for agroforestry",
+       subtitle = "10% uptake\nShelterbelt with SAB spp.\nIntercropping @ 30m\n3.5% DR")
+
+ggsave("output-plots/uk-full-aggregated-macc-cropwise.png", width = 8, height = 5)
+
+
+Dat_ag %>% build_ab_map()
+
+##########################
+# summary data/descriptives
+##########################
+
+# total abatement, Mt
+Dat_ag %>% pull(co2_tyear) %>% sum() * 10^-6
+
+# shelterbelts
+Dat_sb1  %>% group_by(crop) %>% summarise(ar_tha = mean(ar_tha))
+
