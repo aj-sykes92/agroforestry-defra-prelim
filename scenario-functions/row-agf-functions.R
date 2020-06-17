@@ -2,11 +2,13 @@
 library(tidyverse)
 library(mc2d)
 
+# new environment
+row_env <- new.env()
+
 #####################################
 # C per tree + vol per tree estimation
 #####################################
-
-add_tree_data <- function(df, felling_age){
+row_env$add_tree_data <- function(df, felling_age){
   
   # read in dataset from preprocessing
   row_agf_data <- read_rds("row-agroforestry-data-processing/row-agroforestry-data-clean.rds")
@@ -55,7 +57,7 @@ add_tree_data <- function(df, felling_age){
 #####################################
 # agroforestry system scaling
 #####################################
-scale_system <- function(df, row_spacing){
+row_env$scale_system <- function(df, row_spacing){
   
   spacings <- read_rds("row-agroforestry-data-processing/row-agroforestry-data-clean.rds") %>%
     select(spp, agf_spacing_min, agf_spacing_max) %>%
@@ -77,8 +79,7 @@ scale_system <- function(df, row_spacing){
 #####################################
 # crop yield and margin impacts
 #####################################
-
-add_crop_impacts <- function(df, row_spacing) {
+row_env$add_crop_impacts <- function(df, row_spacing) {
   
   cropyield_loess <- read_rds("crop-yield-impacts/cropyield-loess-models.rds")
   
@@ -103,27 +104,26 @@ add_crop_impacts <- function(df, row_spacing) {
 #####################################
 # agroforestry cost and revenue
 #####################################
-
-# helper function to estimate timber price, based on Whiteman et al. (1991), adjusted for inflation
-timber_value <- function(spp, S){
-  # implement price curve equation from Whiteman et al. (1991) pg. 17
+row_env$add_agf_margins <- function(df, felling_age, discount_rate){
   
-  # coefficients
-  sum_d <- ifelse(spp == "OK", 0.40 - 0.35, 0.42 - 0.35)
-  a <- 2.24
-  b <- 0.47
-  conv_fac_1990 <- 3.6780
-  P <- conv_fac_1990 * exp(a + sum_d) * S ^ b
-  
-  # adjust to GBP2017 using inflation factor (1990 - 2017) http://www.in2013dollars.com/1990-GBP-in-2017?amount=1
-  inf_fac <- 2.16
-  
-  # adjust
-  P_adj <- P * inf_fac
-  return(P_adj)
-}
-
-add_agf_margins <- function(df, felling_age, discount_rate){
+  # one-use helper function to estimate timber price, based on Whiteman et al. (1991), adjusted for inflation
+  timber_value <- function(spp, S){
+    # implement price curve equation from Whiteman et al. (1991) pg. 17
+    
+    # coefficients
+    sum_d <- ifelse(spp == "OK", 0.40 - 0.35, 0.42 - 0.35)
+    a <- 2.24
+    b <- 0.47
+    conv_fac_1990 <- 3.6780
+    P <- conv_fac_1990 * exp(a + sum_d) * S ^ b
+    
+    # adjust to GBP2017 using inflation factor (1990 - 2017) http://www.in2013dollars.com/1990-GBP-in-2017?amount=1
+    inf_fac <- 2.16
+    
+    # adjust
+    P_adj <- P * inf_fac
+    return(P_adj)
+  }
   
   # timber cost datasets
   # Below is additional Monte Carlo for cost, using data from Burgess et al. (2003). Data assigned into vectors
@@ -246,8 +246,7 @@ add_agf_margins <- function(df, felling_age, discount_rate){
 #####################################
 # final estimates of carbon sequestration
 #####################################
-
-add_abatement <- function(df, felling_age){
+row_env$add_abatement <- function(df, felling_age){
   df %>%
     mutate(tree_co2_tyear = ntrees * CO2_tree / felling_age,
            # add in estimate of below ground C sequestration (from Aertsens et al., 2013; see Excel workbook [Belowground C per tree.xlsx])
@@ -257,20 +256,8 @@ add_abatement <- function(df, felling_age){
 }
 
 #####################################
-# total cost, abatement and MAC
-#####################################
-
-calc_mac <- function(df){
-  df %>%
-    mutate(ar_tha = co2_tyear / area_ha,
-           totcost_gbp = (gm_gbp_agf - gm_gbp) + timbgm_gbp,
-           mac_gbp_tco2 = -totcost_gbp / co2_tyear)
-}
-
-#####################################
 # wrapper function
 #####################################
-
 build_row_agf <- function(felling_age, row_spacing, discount_rate,
                           applies_to = c("barley",
                                          "cereals_other",
@@ -281,19 +268,17 @@ build_row_agf <- function(felling_age, row_spacing, discount_rate,
                                          "wheat")
                           ) {
   
+  source("scenario-functions/univ-functions.R")
+  
   read_rds("simulation-base-data/crop-base-data.rds") %>%
     filter_crops(applies_to) %>%
-    add_tree_data(felling_age) %>%
-    scale_system(row_spacing) %>%
-    add_crop_impacts(row_spacing) %>%
-    add_agf_margins(felling_age, discount_rate) %>%
-    add_abatement(felling_age) %>%
+    row_env$add_tree_data(felling_age) %>%
+    row_env$scale_system(row_spacing) %>%
+    row_env$add_crop_impacts(row_spacing) %>%
+    row_env$add_agf_margins(felling_age, discount_rate) %>%
+    row_env$add_abatement(felling_age) %>%
     calc_mac() %>%
     return()
   
 }
-
-
-
-
   
