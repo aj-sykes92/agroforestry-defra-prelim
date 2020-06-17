@@ -83,12 +83,12 @@ ggplot(Summ_lf %>% filter(feature != "Total",
 
 # create final summaries assuming stable lengths from 1990 on
 Boundary_est <- Summ_lf %>%
-  filter(ag_type == "Both",
+  filter(ag_type != "Both",
          year != 1984, # not wanted as much changed between 1984 - 1990
          feature != "Bank/Grass Strip", # not a boundary
          feature != "Line of Trees", # not a boundary
          feature != "Total") %>% # # not needed
-  group_by(feature) %>%
+  group_by(feature, ag_type) %>%
   summarise(length_be = mean(length_be),
             length_max = mean(length_max),
             length_min = mean(length_min),
@@ -111,5 +111,7 @@ bound_length = function(field_size){
   bound_length_adj_ha = bound_length_adj / field_size
   return(bound_length_adj_ha)
 }
+
 bound_length(1:50)
-sum(Boundary_est_ha$length_be)
+sum(Boundary_est_ha %>% filter(ag_type == "Arable") %>% pull(length_be))
+# average arable field is ~11 ha -- seems legit
