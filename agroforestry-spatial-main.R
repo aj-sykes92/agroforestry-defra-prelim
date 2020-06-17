@@ -195,7 +195,7 @@ Dat_crop <- Dat_crop %>%
   filter(area_ha != 0)
 
 #####################################
-# impute pasture yield nas for Northern Ireland (missing from model) and GHIs where missing
+# impute pasture yield nas for Northern Ireland (missing from model) and GHIs and SOCs where missing
 #####################################
 Dat_crop <- Dat_crop %>%
   group_by(crop) %>%
@@ -204,7 +204,10 @@ Dat_crop <- Dat_crop %>%
                             yield_tha),
          ghi = ifelse(is.na(ghi),
                       mean(ghi, na.rm = T),
-                      ghi)) %>%
+                      ghi),
+         soc = ifelse(is.na(soc),
+                      mean(soc, na.rm = T),
+                      soc)) %>%
            ungroup()
 
 #####################################
