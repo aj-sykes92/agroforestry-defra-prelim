@@ -45,8 +45,21 @@ Dat_SB <- Dat_CL %>%
   group_by(spp, tight, period_start, period_cntr, period_end) %>%
   summarise_all(.funs = mean)
 
+# remove spp without tight + loose spacing data
+has_both <- Dat_SB %>%
+  ungroup() %>%
+  filter(tight == F) %>%
+  pull(spp) %>%
+  unique()
+
+Dat_SB <- Dat_SB %>%
+  filter(spp %in% has_both)
+
 # join full names
 Dat_SB <- Dat_SB %>% left_join(Species_full, by = "spp")
+
+# write out crib sheet for species names
+Dat_SB %>% ungroup() %>% distinct(spp, full_name) %>% write_rds("shelter-belt-data-preprocessing/spp-name-crib-sheet.rds")
 
 # calculate mean tnpp for adjustment via Del Grosso model
 av_annual_tnpp <- Dat_SB %>%
@@ -70,7 +83,3 @@ Dat_SB <- Dat_SB %>%
   
 # write out
 write_rds(Dat_SB, "shelter-belt-data-preprocessing/shelter-belt-data-clean.rds")
-
-
-
-
