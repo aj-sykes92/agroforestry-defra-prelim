@@ -117,11 +117,27 @@ Ras_solar <- Ras_solar %>%
 
 Ras_solar <- Ras_solar %>% crop(Shp_UK) %>% mask(Shp_UK)
 
+# create raster of DA countries
+Ras_temp <- Brk_soil[[1]] # use sand % as basis for DA raster
+Ras_temp[!is.na(Ras_temp)] <- 1
+
+Ras_sc <- Ras_temp %>% mask(subset(Shp_UK, Shp_UK@data[["NAME_1"]] == "Scotland"))
+Ras_wa <- Ras_temp %>% mask(subset(Shp_UK, Shp_UK@data[["NAME_1"]] == "Wales"))
+Ras_ni <- Ras_temp %>% mask(subset(Shp_UK, Shp_UK@data[["NAME_1"]] == "Northern Ireland"))
+
+Ras_da <- Ras_temp
+Ras_da[Ras_sc == 1] <- 2
+Ras_da[Ras_wa == 1] <- 3
+Ras_da[Ras_ni == 1] <- 4
+names(Ras_da) <- "da_num"
+rm(Ras_temp, Ras_sc, Ras_wa, Ras_ni)
+
+
 # stacks for crops and pasture
 #Brk_crop <- stack(Brk_soil, Ras_crop_minfrac, Ras_pastyield, Ras_past_workable, Brk_croparea, Brk_cropyield) # includes pasture so as to be able to include lowland pasture here
 #Brk_pasture <- stack(Brk_soil, Ras_past_minfrac, Ras_pastarea, Ras_pastyield, Ras_past_workable)
 
-Brk_main <- stack(Brk_soil, Brk_clim, Ras_solar, Ras_crop_minfrac, Ras_past_minfrac, Ras_crop_soc, Ras_past_soc, Ras_pastarea, Ras_pastyield, Ras_uplandyield, Ras_past_workable, Brk_croparea, Brk_cropyield)
+Brk_main <- stack(Brk_soil, Brk_clim, Ras_da, Ras_solar, Ras_crop_minfrac, Ras_past_minfrac, Ras_crop_soc, Ras_past_soc, Ras_pastarea, Ras_pastyield, Ras_uplandyield, Ras_past_workable, Brk_croparea, Brk_cropyield)
 
 # remove all preliminary/original variables
 rm(Ras_past_minfrac, Ras_crop_minfrac, Ras_pastarea, Ras_pastyield, Ras_uplandyield, Ras_past_workable, Brk_croparea, Brk_cropyield, Brk_soil, Brk_clim)
