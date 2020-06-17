@@ -16,7 +16,9 @@ Dat_dummy <- Dat_crop %>%
          gm_gbp = gm_gbp / area_ha,
          area_ha = area_ha / area_ha)
 
+##########################
 # build scenarios
+##########################
 
 # row agroforestry
 source("scenario-functions/row-agf-functions.R")
@@ -25,6 +27,8 @@ Dat_row1 %>% pull(mac_gbp_tco2) %>% qplot()
 
 # shelter belt agroforestry
 source("scenario-functions/shelter-belt-functions.R")
+
+# crib sheet for short spp names
 read_rds("shelter-belt-data-preprocessing/shelter-belt-data-clean.rds") %>%
   distinct(spp, full_name)
 
@@ -33,6 +37,15 @@ Dat_sb1 %>% pull(mac_gbp_tco2) %>% qplot()
 
 Dat_sb2 <- build_sb_agf(spp_short = "SP", felling_age = 40, discount_rate = 0.035)
 Dat_sb2 %>% pull(mac_gbp_tco2) %>% qplot()
+
+# fenceline agroforestry
+source("scenario-functions/fenceline-agf-functions.R")
+
+Dat_fl1 <- build_fl_agf(felling_age = 60, discount_rate = 0.035)
+
+# hedges
+source("scenario-functions/hedge-functions.R")
+Dat_hdg1 <- build_hdg_agf(discount_rate = 0.035)
 
 ##########################
 # plots
@@ -52,14 +65,10 @@ Dat_row1 %>%
 ggsave("output-plots/uk-full-macc-row-agf-30-m-60-y-035-dr.png", width = 8, height = 5)
 
 # row, arable only
-Dat_row1 %>%
-  filter(crop != "pasture") %>%
-  build_macc_plot()
+Dat_row1 %>% filter(crop != "pasture") %>% build_macc_plot()
 
 # row, pasture only
-Dat_row1 %>%
-  filter(crop == "pasture") %>%
-  build_macc_plot()
+Dat_row1 %>% filter(crop == "pasture") %>% build_macc_plot()
 
 # sb1, arable, pasture and upland
 Dat_sb1 %>%
@@ -75,6 +84,18 @@ Dat_sb2 %>%
        subtitle = "Scots pine spp\n40 year lifespan\nBelt dimensions 180m x 10m\nBelt spacing 250m\n3.5% DR")
 
 ggsave("output-plots/uk-full-macc-shelt-belt-sp-40-y-180-10-250-m-035-dr.png", width = 8, height = 5)
+
+# fenceline agroforestry
+Dat_fl1 %>%
+  build_macc_plot() +
+  labs(title = "UK MAC curve for fencline agroforestry",
+       subtitle = "60 year lifespan\n3.5% DR")
+
+ggsave("output-plots/uk-full-macc-fenceline-agf-60-y-035-dr.png", width = 8, height = 5)
+
+# hedges
+Dat_hdg1 %>%
+  build_macc_plot()
 
 ##########################
 # UK MACC maps
@@ -95,4 +116,10 @@ Dat_sb1 %>%
 
 ggsave("output-plots/uk-mac-map-shelt-belt-sab-60-y-180-10-250-m-035-dr.png", width = 8, height = 8)
 
+Dat_fl1 %>%
+  build_macc_map()
+
+Dat_fl1 %>%
+  group_by(da_num) %>%
+  summarise(ar_tha = mean(ar_tha))
   
