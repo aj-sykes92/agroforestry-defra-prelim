@@ -33,7 +33,7 @@ Dat_lf <- Dat_lf %>%
 
 # summarise
 arable <- Dat_lf %>%
-  group_by(year, feature) %>%
+  group_by(year, feature, country) %>%
   filter(arable==1) %>%
   summarise(length_be = sum(length_be),
             length_min = sum(length_min),
@@ -42,7 +42,7 @@ arable <- Dat_lf %>%
   ungroup()
 
 grass <- Dat_lf %>%
-  group_by(year, feature) %>%
+  group_by(year, feature, country) %>%
   filter(livestock==1) %>%
   summarise(length_be = sum(length_be),
             length_min = sum(length_min),
@@ -51,7 +51,7 @@ grass <- Dat_lf %>%
   ungroup()
 
 both <- Dat_lf %>%
-  group_by(year, feature) %>%
+  group_by(year, feature, country) %>%
   filter(both==1) %>%
   summarise(length_be = sum(length_be),
             length_min = sum(length_min),
@@ -68,7 +68,7 @@ Summ_lf <- Summ_lf %>%
 # visualise
 ggplot(Summ_lf %>% filter(feature != "Total"),
        aes(x = year, y = length_be_per_ha, colour = feature)) +
-  facet_wrap(~ag_type, nrow = 3) +
+  facet_grid(ag_type ~ country) +
   geom_line()
 
 ggplot(Summ_lf %>% filter(feature != "Total",
@@ -76,10 +76,10 @@ ggplot(Summ_lf %>% filter(feature != "Total",
                           year != 1984),
        aes(x = year, y = length_be_per_ha, colour = feature)) +
   geom_line() +
-  geom_smooth(method = "lm")
+  geom_smooth(method = "lm") +
+  facet_wrap(~country, nrow = 3)
 
-# plotting shows more or less stable lengths from 1990 on. I don't think we can justifiably
-# distinguish between arable and grass on the basis of the interpretation of the categories.
+# plotting shows more or less stable lengths from 1990 on
 
 # create final summaries assuming stable lengths from 1990 on
 Boundary_est <- Summ_lf %>%
@@ -88,7 +88,7 @@ Boundary_est <- Summ_lf %>%
          feature != "Bank/Grass Strip", # not a boundary
          feature != "Line of Trees", # not a boundary
          feature != "Total") %>% # # not needed
-  group_by(feature, ag_type) %>%
+  group_by(feature, ag_type, country) %>%
   summarise(length_be = mean(length_be),
             length_max = mean(length_max),
             length_min = mean(length_min),
@@ -113,5 +113,5 @@ bound_length = function(field_size){
 }
 
 bound_length(1:50)
-sum(Boundary_est_ha %>% filter(ag_type == "Arable") %>% pull(length_be))
-# average arable field is ~11 ha -- seems legit
+sum(Boundary_est_ha %>% filter(ag_type == "Arable", country == "England") %>% pull(length_be))
+# average English arable field is ~12 ha -- seems legit
