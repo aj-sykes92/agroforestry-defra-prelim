@@ -78,7 +78,7 @@ sb_env$add_crop_impacts <- function(df){
     #                   mean(c(1.171, 1.117)),
     #                   mean(c(1.232, 1.119)),
     #                   mean(c(1.171, 1.117))))
-    mutate(frac_yi = 1.1) # new data from FC x SAC report
+    mutate(frac_yi = 1.05) # new data from FC x SAC report
   
   df <- df %>%
     left_join(Dat_yieldimp, by = "crop") %>%
