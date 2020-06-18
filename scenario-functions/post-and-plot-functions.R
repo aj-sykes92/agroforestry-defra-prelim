@@ -169,8 +169,10 @@ get_descriptives <- function(df, grouping_vars = NULL){
       mutate(crop = prettify(crop))
   }
   
+  
   # rename
-  colnames(df) <- c("Crop", "Total applicable area (kha)", "Area change (kha)", "Area change (fractional)",
+  blanks <- rep("", times = length(grouping_vars))
+  colnames(df) <- c(blanks, "Total applicable area (kha)", "Area change (kha)", "Area change (fractional)",
                     "Production change (kt DM)", "Production change (fractional)",
                     "Total net cost (£m)", "AP (kt CO2 / year)", "AR (t CO2 / ha / yr)", "MAC (£ / tCO2)")
   
