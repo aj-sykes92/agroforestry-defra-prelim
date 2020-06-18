@@ -1,6 +1,22 @@
 library(tidyverse)
 
 #####################################
+# make crop names nice
+#####################################
+prettify <- function(crops){
+  first <- str_sub(crops, 1, 1) %>%
+    str_to_upper()
+  
+  rest <- str_sub(crops, 2, -1) %>%
+    str_replace_all("_other", ", other") %>%
+    str_replace_all("_", " ")
+  
+  pretty <- paste0(first, rest)
+  
+  return(pretty)
+}
+
+#####################################
 # cropwise MACC plot function
 #####################################
 build_macc_plot <- function(df){
@@ -13,6 +29,7 @@ build_macc_plot <- function(df){
   scc <- 66.1
   
   df %>%
+    mutate(crop = prettify(crop)) %>%
     select(mac_gbp_tco2, co2_tyear, crop) %>%
     arrange(mac_gbp_tco2) %>%
     mutate(co2_tyear = co2_tyear * 10^-6,
@@ -61,13 +78,13 @@ cheap_scale <- function(df, area_frac){
     arrange(mac_gbp_tco2) %>%
     mutate(area_cumfrac = cumsum(area_ha) / sum(area_ha)) %>%
     filter(area_cumfrac <= area_frac) %>%
-    select(x, y, da_num, crop, area_ha, yield_tha, yield_tha_agf, co2_tyear:mac_gbp_tco2)
+    select(x, y, da_num, crop, area_ha, yield_tha, yield_tha_agf, area_impact, co2_tyear:mac_gbp_tco2)
 }
 
 even_scale <- function(df, area_frac){
   df %>%
-    select(x, y, da_num, crop, area_ha, yield_tha, yield_tha_agf, co2_tyear:mac_gbp_tco2) %>%
-    mutate_at(vars(c(co2_tyear, totrev_gbp)), funs(. * area_frac))
+    select(x, y, da_num, crop, area_ha, yield_tha, yield_tha_agf, area_impact, co2_tyear:mac_gbp_tco2) %>%
+    mutate_at(vars(c(area_ha, co2_tyear, totrev_gbp)), funs(. * area_frac))
 }
 
 #####################################
@@ -117,4 +134,45 @@ build_ab_map <- function(df){
     geom_polygon(data = Shp_UK, aes(x = long, y = lat, group = group), colour = "black", fill = NA, size = 0.5) +
     coord_quickmap() +
     theme_void()
+}
+
+#####################################
+# descriptives function
+#####################################
+get_descriptives <- function(df, grouping_vars = NULL){
+  
+  # main descriptives
+  df <- df %>%
+    mutate(yield_t = yield_tha * area_ha,
+           yield_t_agf = yield_tha_agf * area_ha * area_impact,
+           yieldinc_t = yield_t_agf * area_impact - yield_t,
+           areainc_ha = area_ha * area_impact - area_ha) %>%
+    group_by_at(grouping_vars) %>%
+    summarise_at(vars(area_ha, areainc_ha, yield_t:yieldinc_t, co2_tyear, totrev_gbp), funs(sum(.))) %>%
+    mutate(area_kha = area_ha * 10^-3,
+           areainc_kha = areainc_ha * 10^-3,
+           areainc_frac = areainc_ha / area_ha,
+           prodinc_kt = yieldinc_t * 10^-3,
+           prodinc_frac = yieldinc_t / yield_t,
+           totcost_milliongbp = -totrev_gbp * 10^-6,
+           co2_ktyear = co2_tyear * 10^-3,
+           ar_tha = co2_tyear / area_ha,
+           mac_gbp_tco2 = -totrev_gbp / co2_tyear
+           ) %>%
+    mutate_at(vars(area_kha:mac_gbp_tco2), funs(round(., 2))) %>%
+    select(grouping_vars, area_kha:mac_gbp_tco2) %>%
+    arrange(mac_gbp_tco2)
+  
+  # adjust crop names
+  if("crop" %in% colnames(df)){
+    df <- df %>%
+      mutate(crop = prettify(crop))
+  }
+  
+  # rename
+  colnames(df) <- c("Crop", "Total applicable area (kha)", "Area change (kha)", "Area change (fractional)",
+                    "Production change (kt)", "Production change (fractional)",
+                    "Total net cost (£m)", "AP (kt CO2 / year)", "AR (t CO2 / ha", "MAC (£ / tCO2")
+  
+  return(df)
 }
