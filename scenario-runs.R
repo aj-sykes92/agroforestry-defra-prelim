@@ -160,9 +160,36 @@ Dat_ag %>% build_ab_map()
 # summary data/descriptives
 ##########################
 
-# total abatement, Mt
-Dat_ag %>% pull(co2_tyear) %>% sum() * 10^-6
+# row system
+Dat_row1 %>%
+  cheap_scale(0.1) %>%
+  get_descriptives("crop") %>%
+  write.table("output-tables/desc-row-agf-30-m-60-y-035-dr.txt")
 
-# shelterbelts
-Dat_sb1  %>% group_by(crop) %>% summarise(ar_tha = mean(ar_tha))
+# shelterbelt system
+Dat_sb1 %>%
+  even_scale(0.1) %>%
+  get_descriptives("crop") %>%
+  write.table("output-tables/desc-sb-agf-180-10-250-m-60-y-035-dr.txt", row.names = F)
+
+# fenceline system
+Dat_fl1 %>%
+  cheap_scale(0.1) %>%
+  get_descriptives("crop") %>%
+  write.table("output-tables/desc-fl-agf-60-y-035-dr.txt", row.names = F)
+
+# hedge systems
+Dat_hdg1 %>%
+  cheap_scale(0.1) %>%
+  get_descriptives("crop") %>%
+  write.table("output-tables/desc-hdg-035-dr.txt", row.names = F)
+
+# all systems
+Dat_ag %>%
+  get_descriptives("crop") %>%
+  write.table("output-tables/desc-full-agg-cropwise.txt", row.names = F)
+
+Dat_ag %>%
+  get_descriptives("sys_type") %>%
+  write.table("output-tables/desc-full-agg-syswise.txt", row.names = F)
 
