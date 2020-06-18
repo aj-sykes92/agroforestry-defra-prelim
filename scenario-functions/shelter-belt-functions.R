@@ -67,18 +67,7 @@ sb_env$add_crop_impacts <- function(df){
   # yield improvements from Caborn (1957)
   Dat_yieldimp <- read_rds("simulation-base-data/crop-base-data.rds") %>%
     distinct(crop) %>%
-    # removed old forestry commission data -- so old as to be potentially misleading for newer crop varietals
-    #mutate(frac_yi = c(mean(c(1.34, 1.241)),
-    #                   mean(c(1.34, 1.241)),
-    #                   mean(c(1.171, 1.117)),
-    #                   mean(c(1.171, 1.117)),
-    #                   mean(c(1.171, 1.117)),
-    #                   1.169,
-    #                   mean(c(1.171, 1.117)),
-    #                   mean(c(1.171, 1.117)),
-    #                   mean(c(1.232, 1.119)),
-    #                   mean(c(1.171, 1.117))))
-    mutate(frac_yi = 1.05) # new data from FC x SAC report
+    mutate(frac_yi = c(1.01, 1.03, rep(1.05, 8))) # arable = 10% increase, data from FC x SAC report, livestock = 3% mortality reduction on upland, 1% mortality reduction on pasture land
   
   df <- df %>%
     left_join(Dat_yieldimp, by = "crop") %>%
@@ -114,7 +103,7 @@ sb_env$add_agf_margins <- function(df, felling_age, length, width, discount_rate
     # maintenance costs from Trees For Shelter (1997) -- FC x SAC tech note
     mutate(set_cost_tree = annualise_cost(3250 / 7220, felling_age, discount_rate),
            plant_cost_tree = annualise_cost(1080 / 7220, felling_age, discount_rate),
-           fence_cost_ha = ifelse(crop == "upland" | crop == "pasture", deerfencecost_ha_gbp, regfencecost_ha_gbp),
+           fence_cost_ha = ifelse(crop == "upland", deerfencecost_ha_gbp, regfencecost_ha_gbp),
            maint_cost_ha = c(30, 20, 30, 30, 30, 30, 30, 30, 30, 30) * 1.832) %>% # inf fac https://www.in2013dollars.com/uk/inflation/1997
     
     mutate(cost_tree = set_cost_tree + plant_cost_tree,
