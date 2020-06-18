@@ -165,7 +165,7 @@ Dat_row1 %>%
   cheap_scale(0.1) %>%
   get_descriptives("crop") %>%
   write.table("output-tables/desc-row-agf-30-m-60-y-035-dr.txt",
-              sep = ",",
+              sep = "|",
               quote = F,
               row.names = F)
 
@@ -174,7 +174,7 @@ Dat_sb1 %>%
   even_scale(0.1) %>%
   get_descriptives("crop") %>%
   write.table("output-tables/desc-sb-agf-180-10-250-m-60-y-035-dr.txt",
-              sep = ",",
+              sep = "|",
               quote = F,
               row.names = F)
 
@@ -183,7 +183,7 @@ Dat_fl1 %>%
   cheap_scale(0.1) %>%
   get_descriptives("crop") %>%
   write.table("output-tables/desc-fl-agf-60-y-035-dr.txt",
-              sep = ",",
+              sep = "|",
               quote = F,
               row.names = F)
 
@@ -192,7 +192,7 @@ Dat_hdg1 %>%
   cheap_scale(0.1) %>%
   get_descriptives("crop") %>%
   write.table("output-tables/desc-hdg-035-dr.txt",
-              sep = ",",
+              sep = "|",
               quote = F,
               row.names = F)
 
@@ -200,14 +200,14 @@ Dat_hdg1 %>%
 Dat_ag %>%
   get_descriptives("crop") %>%
   write.table("output-tables/desc-full-agg-cropwise.txt",
-              sep = ",",
+              sep = "|",
               quote = F,
               row.names = F)
 
 Dat_ag %>%
   get_descriptives("sys_type") %>%
   write.table("output-tables/desc-full-agg-syswise.txt",
-              sep = ",",
+              sep = "|",
               quote = F,
               row.names = F)
 
