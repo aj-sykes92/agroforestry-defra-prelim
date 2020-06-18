@@ -23,8 +23,8 @@ build_macc_plot <- function(df){
   
   crop_colours <- RColorBrewer::brewer.pal(9, "Pastel1") # can change up if desired
   crop_colours[10] <- "#e7e1ef" # the default grey not nice
-  names(crop_colours) <- c("oil_crops_other", "potato", "pasture", "vegetable", "rapeseed",
-                           "wheat", "barley", "pulses_other", "upland", "cereals_other")
+  names(crop_colours) <- c("Oil crops, other", "Potato", "Pasture", "Vegetable", "Rapeseed",
+                           "Wheat", "Barley", "Pulses, other", "Upland", "Cereals, other")
   
   scc <- 66.1
   
@@ -172,7 +172,7 @@ get_descriptives <- function(df, grouping_vars = NULL){
   # rename
   colnames(df) <- c("Crop", "Total applicable area (kha)", "Area change (kha)", "Area change (fractional)",
                     "Production change (kt DM)", "Production change (fractional)",
-                    "Total net cost (£m)", "AP (kt CO2 / year)", "AR (t CO2 / ha", "MAC (£ / tCO2")
+                    "Total net cost (£m)", "AP (kt CO2 / year)", "AR (t CO2 / ha / yr)", "MAC (£ / tCO2)")
   
   return(df)
 }
