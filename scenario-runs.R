@@ -164,13 +164,19 @@ Dat_ag %>% build_ab_map()
 Dat_row1 %>%
   cheap_scale(0.1) %>%
   get_descriptives("crop") %>%
-  write.table("output-tables/desc-row-agf-30-m-60-y-035-dr.txt")
+  write.table("output-tables/desc-row-agf-30-m-60-y-035-dr.txt",
+              sep = ",",
+              quote = F,
+              row.names = F)
 
 # shelterbelt system
 Dat_sb1 %>%
   even_scale(0.1) %>%
   get_descriptives("crop") %>%
-  write.table("output-tables/desc-sb-agf-180-10-250-m-60-y-035-dr.txt", row.names = F)
+  write.table("output-tables/desc-sb-agf-180-10-250-m-60-y-035-dr.txt",
+              sep = ",",
+              quote = F,
+              row.names = F)
 
 # fenceline system
 Dat_fl1 %>%
