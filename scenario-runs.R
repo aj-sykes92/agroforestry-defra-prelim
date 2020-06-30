@@ -300,3 +300,15 @@ Dat_ag %>%
   get_descriptives() %>%
   View()
 
+##########################
+# anpp output for Mark B @ Defra
+##########################
+read_rds("simulation-base-data/crop-base-data.rds") %>%
+  ggplot() +
+  geom_raster(aes(x = x, y = y, fill = tree_anpp)) +
+  geom_polygon(data = raster::shapefile(find_onedrive(dir = "GIS data repository", path = "DA shapefile/GBR_adm_shp/GBR_adm1.shp")),
+               aes(x = long, y = lat, group = group), colour = "black", fill = NA, size = 0.5) +
+  coord_quickmap() +
+  theme_void() +
+  labs(fill = expression("Above-ground woody\nbiomass NPP (g C m"^{-2}*" year"^{-1}*")"))
+ggsave("output-plots/tree-anpp-map.png", width = 5, height = 5)
