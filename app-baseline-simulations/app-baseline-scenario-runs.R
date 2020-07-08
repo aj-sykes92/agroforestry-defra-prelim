@@ -6,29 +6,33 @@ library(mc2d)
 ##########################
 # build scenarios
 ##########################
+source("scenario-functions/post-and-plot-functions.R")
 
 # row agroforestry
 source("scenario-functions/row-agf-functions.R")
-Dat_row <- build_row_agf(felling_age = 60, row_spacing = 30, discount_rate = 0.035)
+Dat_row <- build_row_agf(felling_age = 60, row_spacing = 30, discount_rate = 0.035) %>%
+  cheap_scale(0.1)
 
 # shelter belt agroforestry
 source("scenario-functions/shelter-belt-functions.R")
-Dat_sb <- build_sb_agf(spp_short = "SAB", felling_age = 60, discount_rate = 0.035)
+Dat_sb <- build_sb_agf(spp_short = "SAB", felling_age = 60, discount_rate = 0.035) %>%
+  even_scale(0.1)
 
 # fenceline agroforestry
 source("scenario-functions/fenceline-agf-functions.R")
-Dat_fl <- build_fl_agf(felling_age = 60, discount_rate = 0.035)
+Dat_fl <- build_fl_agf(felling_age = 60, discount_rate = 0.035) %>%
+  cheap_scale(0.1)
 
 # hedges
 source("scenario-functions/hedge-functions.R")
-Dat_hdg <- build_hdg_agf(discount_rate = 0.035)
+Dat_hdg <- build_hdg_agf(discount_rate = 0.035) %>%
+  cheap_scale(0.1)
 
 # aggregate
-source("scenario-functions/post-and-plot-functions.R")
-Dat_ag <- bind_rows(list(Intercropping = cheap_scale(Dat_row, 0.1),
-                         Shelterbelts = even_scale(Dat_sb, 0.1),
-                         `Fenceline tree planting` = cheap_scale(Dat_fl, 0.1),
-                         `Hedge expansion` = cheap_scale(Dat_hdg, 0.1)),
+Dat_ag <- bind_rows(list(Intercropping = Dat_row,
+                         Shelterbelts = Dat_sb,
+                         `Fenceline tree planting` = Dat_fl,
+                         `Hedge expansion` = Dat_hdg),
                     .id = "sys_type")
 
 ##########################
