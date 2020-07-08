@@ -11,7 +11,11 @@ source("scenario-functions/post-and-plot-functions.R")
 
 # build ui
 ui <- fluidPage(
-  # app title ----
+  
+  # app theme
+  #theme = "bootstrap.css",
+  
+  # app title
   titlePanel("Marginal Abatement Cost Model for Agroforestry"),
   # app subtitle
   h4(HTML("Prepared for Defra Project 'Clean Growth through Sustainable intensification'")),
