@@ -35,14 +35,6 @@ ui <- fluidPage(
                   label = "Discount rate (%)",
                   min = 0.1, max = 10, value = 3.5, step = 0.1),
       
-      sliderInput(inputId = "sb_agf_uptake",
-                  label = "Shelter belt uptake (%)",
-                  min = 1, max = 100, value = 10, step = 1),
-      
-      sliderInput(inputId = "row_agf_uptake",
-                  label = "Fenceline agroforestry uptake (%)",
-                  min = 1, max = 100, value = 10, step = 1),
-      
       # update
       actionButton(inputId = "run_all",
                    label = "Update all simulations"),
@@ -121,7 +113,7 @@ ui <- fluidPage(
       
       # update
       actionButton(inputId = "run_fl_agf",
-                   label = "Update fenceline agroforetry simulation"),
+                   label = "Update fenceline agroforestry simulation"),
       
       # break
       hr(),
@@ -273,7 +265,8 @@ server <- function(input, output) {
   observeEvent(input$run_row_agf, {
     sim$row_agf <- build_row_agf(felling_age = input$row_agf_felling_age,
                                  row_spacing = input$row_agf_row_spacing,
-                                 discount_rate = input$discount_rate * 10^-2)
+                                 discount_rate = input$discount_rate * 10^-2) %>%
+      cheap_scale(input$row_agf_uptake * 10^-2)
   })
   
   # plots
@@ -291,7 +284,8 @@ server <- function(input, output) {
   observeEvent(input$run_sb_agf, {
     sim$sb_agf <- build_sb_agf(spp_short = input$sb_agf_spp,
                                felling_age = input$sb_agf_felling_age,
-                               discount_rate = input$discount_rate * 10^-2)
+                               discount_rate = input$discount_rate * 10^-2) %>%
+      even_scale(input$sb_agf_uptake * 10^-2)
   })
   
   # plots
@@ -306,7 +300,8 @@ server <- function(input, output) {
   # sim run
   observeEvent(input$run_fl_agf, {
     sim$fl_agf <- build_fl_agf(felling_age = input$fl_agf_felling_age,
-                               discount_rate = input$discount_rate * 10^-2)
+                               discount_rate = input$discount_rate * 10^-2) %>%
+      cheap_scale(input$fl_agf_uptake  * 10^-2)
   })
   
   # plots
@@ -321,7 +316,8 @@ server <- function(input, output) {
   # sim run
   observeEvent(input$run_hdg_agf, {
     sim$hdg_agf <- build_hdg_agf(discount_rate = input$discount_rate * 10^-2,
-                                 applies_to = input$hdg_agf_crop_spp)
+                                 applies_to = input$hdg_agf_crop_spp) %>%
+      cheap_scale(input$hdg_agf_uptake * 10^-2)
   })
   
   # plots
