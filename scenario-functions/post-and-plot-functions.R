@@ -217,7 +217,10 @@ get_descriptives <- function(df, grouping_vars = NULL){
   blanks <- rep("", times = length(grouping_vars))
   colnames(df) <- c(blanks, "Total applicable area (kha)", "Area change (kha)", "Area change (fractional)",
                     "Production change (kt DM)", "Production change (fractional)",
-                    "Total net cost (£m)", "AP (kt CO2 / year)", "AR (t CO2 / ha / yr)", "MAC (£ / tCO2)")
+                    "Total net cost (£m)",
+                    "AP (kt CO<sub>2</sub> yr<sup>-1</sup>)",
+                    "AR (t CO<sub>2</sub> ha<sup>-1</sup> yr<sup>-1</sup>)",
+                    "MAC (£ tCO<sub>2</sub>-eq<sup>-1</sup>)")
   
   return(df)
 }
