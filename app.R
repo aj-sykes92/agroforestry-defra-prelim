@@ -21,9 +21,9 @@ ui <- fluidPage(
   shinybusy::add_busy_spinner(position = "top-right", height = "80px", width = "80px"),
   
   # app title
-  titlePanel("Marginal Abatement Cost Model for Agroforestry"),
+  titlePanel("Marginal Abatement Cost Model for Agroforestry in the United Kingdom"),
   # app subtitle
-  h4(HTML("Prepared for Defra Project 'Clean Growth through Sustainable intensification'")),
+  h4(HTML("Prepared for Defra project <i>Clean Growth through Sustainable intensification</i>")),
   
   # app in sidebar-panel-main-panel layout 
   sidebarLayout(
@@ -161,6 +161,15 @@ ui <- fluidPage(
     # main panel for outputs
     mainPanel(
       tabsetPanel(type = "tabs",
+                  
+                  ######################
+                  # intro/helper panel
+                  ######################
+                  tabPanel(
+                    title = "Using the app",
+                    hr(),
+                    includeMarkdown("app-helper-data/using-the-app.Rmd")
+                  ),
                   
                   ######################
                   # row agroforestry
@@ -357,11 +366,13 @@ server <- function(input, output) {
   # tables
   output$ag_table_crop <- renderTable({
     get_descriptives(sim$agf_ag, "crop")
-  })
+  },
+  sanitize.text.function = function(x) x)
   
   output$ag_table_sys <- renderTable({
     get_descriptives(sim$agf_ag, "sys_type")
-  })
+  },
+  sanitize.text.function = function(x) x)
   
   #########################
   # row agroforestry
@@ -394,7 +405,8 @@ server <- function(input, output) {
   # table
   output$row_agf_table <- renderTable({
     get_descriptives(sim$row_agf, "crop")
-  })
+  },
+  sanitize.text.function = function(x) x)
   
   #########################
   # shelter belt agroforestry
@@ -427,7 +439,8 @@ server <- function(input, output) {
   # table
   output$sb_agf_table <- renderTable({
     get_descriptives(sim$sb_agf, "crop")
-  })
+  },
+  sanitize.text.function = function(x) x)
   
   #########################
   # fenceline agroforestry
@@ -459,7 +472,8 @@ server <- function(input, output) {
   # table
   output$fl_agf_table <- renderTable({
     get_descriptives(sim$fl_agf, "crop")
-  })
+  },
+  sanitize.text.function = function(x) x)
   
   #########################
   # hedges
@@ -491,7 +505,8 @@ server <- function(input, output) {
   # table
   output$hdg_agf_table <- renderTable({
     get_descriptives(sim$hdg_agf, "crop")
-  })
+  },
+  sanitize.text.function = function(x) x)
   
 }
 
