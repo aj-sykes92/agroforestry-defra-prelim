@@ -74,7 +74,7 @@ build_macc_map <- function(df){
 # paired mac and ar map function
 #####################################
 build_paired_map <- function(df){
-  shp <- read_rds("app-baseline-simulations/uk-shp.rds")
+  shp <- read_rds("app-helper-data/uk-shp.rds")
   
   df_mac <- df %>%
     ungroup() %>%
