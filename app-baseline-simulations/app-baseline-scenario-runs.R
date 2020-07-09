@@ -29,11 +29,12 @@ Dat_hdg <- build_hdg_agf(discount_rate = 0.035) %>%
   cheap_scale(0.1)
 
 # aggregate
-Dat_ag <- bind_rows(list(Intercropping = Dat_row,
+Dat_ag <- bind_rows(list(`Row agroforestry` = Dat_row,
                          Shelterbelts = Dat_sb,
-                         `Fenceline tree planting` = Dat_fl,
+                         `Fenceline planting` = Dat_fl,
                          `Hedge expansion` = Dat_hdg),
                     .id = "sys_type")
+
 
 ##########################
 # write scenarios

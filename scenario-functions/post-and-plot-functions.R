@@ -71,6 +71,49 @@ build_macc_map <- function(df){
 }
 
 #####################################
+# paired mac and ar map function
+#####################################
+build_paired_map <- function(df){
+  shp <- read_rds("app-baseline-simulations/uk-shp.rds")
+  
+  df_mac <- df %>%
+    ungroup() %>%
+    group_by(x, y) %>%
+    summarise(co2_tyear = sum(co2_tyear, na.rm = T),
+              totrev_gbp = sum(totrev_gbp, na.rm = T)) %>%
+    ungroup() %>%
+    mutate(value = totrev_gbp / -co2_tyear)
+  
+  df_ar <- df %>%
+    ungroup() %>%
+    group_by(x, y) %>%
+    summarise(co2_tyear = sum(co2_tyear, na.rm = T),
+              area_ha = sum(area_ha, na.rm = T)) %>%
+    ungroup() %>%
+    mutate(value = co2_tyear / area_ha)
+  
+  data <- list(df_mac, df_ar)
+  shp <- list(shp, shp)
+  labs <- list(expression("MAC, GBP t CO"[2]*"-eq"^{-1}),
+               expression("AR, t CO"[2]*"-eq ha"^{-1}*" year"^{-1}))
+  
+  mapplot <- function(df, shp, label) {
+    df %>%
+      ggplot() +
+      geom_raster(aes(x = x, y = y, fill = value)) +
+      geom_polygon(data = shp, aes(x = long, y = lat, group = group), colour = "black", fill = NA, size = 0.5) +
+      labs(title = label,
+           fill = "") +
+      coord_quickmap() +
+      theme_void()
+  }
+  
+  plotlist <- pmap(list(data, shp, labs), mapplot)
+  gridExtra::grid.arrange(grobs = plotlist, nrow = 1, ncol = 2)
+
+}
+
+#####################################
 # scaling functions
 #####################################
 cheap_scale <- function(df, area_frac){
@@ -93,7 +136,7 @@ even_scale <- function(df, area_frac){
 build_agmacc_plot <- function(df){
 
   measure_colours <-  RColorBrewer::brewer.pal(4, "Pastel1") # can change up if desired
-  names(measure_colours) <- c("Intercropping", "Shelterbelts", "Fenceline tree planting", "Hedge expansion")
+  names(measure_colours) <- c("Row agroforestry", "Shelterbelts", "Fenceline planting", "Hedge expansion")
   
   scc <- 66.1
   
