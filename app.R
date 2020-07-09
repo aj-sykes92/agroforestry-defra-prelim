@@ -12,16 +12,18 @@ source("scenario-functions/post-and-plot-functions.R")
 # build ui
 ui <- fluidPage(
   
-  # app theme
-  #theme = "bootstrap.css",
+  # app theme and styling
+  theme = shinythemes::shinytheme("lumen"),
+  shinyWidgets::chooseSliderSkin("Nice"),
+  shinyWidgets::setSliderColor(rep("#8FBC8F", 9), 1:9),
+  
+  # busy spinner
+  shinybusy::add_busy_spinner(position = "top-right", height = "80px", width = "80px"),
   
   # app title
   titlePanel("Marginal Abatement Cost Model for Agroforestry"),
   # app subtitle
   h4(HTML("Prepared for Defra Project 'Clean Growth through Sustainable intensification'")),
-  
-  # busy spinner
-  shinybusy::add_busy_spinner(position = "top-right", height = "80px", width = "80px"),
   
   # app in sidebar-panel-main-panel layout 
   sidebarLayout(
