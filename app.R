@@ -167,15 +167,22 @@ ui <- fluidPage(
                   ######################
                   tabPanel(
                     title = "Row agroforestry",
+                    hr(),
                     
                     # macc plot
-                    plotOutput(outputId = "row_agf_macc")
+                    h4(HTML("Marginal abatement cost curve")),
+                    plotOutput(outputId = "row_agf_macc"),
+                    hr(),
                     
                     # map
+                    h4(HTML("Spatial marginal abatement cost & rate")),
+                    plotOutput(outputId = "row_agf_map"),
+                    hr(),
                     
                     # table
-                    #h4(HTML("b")),
-                    #tableOutput(outputId = "b"),
+                    h4(HTML("Simulation output data")),
+                    tableOutput(outputId = "row_agf_table"),
+                    hr()
                     
                   ),
                   
@@ -186,13 +193,19 @@ ui <- fluidPage(
                     title = "Shelter belts",
                     
                     # macc plot
+                    h4(HTML("Marginal abatement cost curve")),
                     plotOutput(outputId = "sb_agf_macc"),
+                    hr(),
                     
                     # map
+                    h4(HTML("Spatial marginal abatement cost & rate")),
+                    plotOutput(outputId = "sb_agf_map"),
+                    hr(),
                     
                     # table
-                    #h4(HTML("b")),
-                    #tableOutput(outputId = "b"),
+                    h4(HTML("Simulation output data")),
+                    tableOutput(outputId = "sb_agf_table"),
+                    hr()
                     
                   ),
                   
@@ -203,13 +216,19 @@ ui <- fluidPage(
                     title = "Fenceline planting",
                     
                     # macc plot
+                    h4(HTML("Marginal abatement cost curve")),
                     plotOutput(outputId = "fl_agf_macc"),
+                    hr(),
                     
                     # map
+                    h4(HTML("Spatial marginal abatement cost & rate")),
+                    plotOutput(outputId = "fl_agf_map"),
+                    hr(),
                     
                     # table
-                    #h4(HTML("b")),
-                    #tableOutput(outputId = "b"),
+                    h4(HTML("Simulation output data")),
+                    tableOutput(outputId = "fl_agf_table"),
+                    hr()
                     
                   ),
                   
@@ -217,16 +236,23 @@ ui <- fluidPage(
                   # hedges
                   ######################
                   tabPanel(
-                    title = "Hedges",
+                    title = "Hedge expansion",
+                    hr(),
                     
                     # macc plot
+                    h4(HTML("Marginal abatement cost curve")),
                     plotOutput(outputId = "hdg_agf_macc"),
+                    hr(),
                     
                     # map
+                    h4(HTML("Spatial marginal abatement cost & rate")),
+                    plotOutput(outputId = "hdg_agf_map"),
+                    hr(),
                     
                     # table
-                    #h4(HTML("b")),
-                    #tableOutput(outputId = "b"),
+                    h4(HTML("Simulation output data")),
+                    tableOutput(outputId = "hdg_agf_table"),
+                    hr()
                     
                   ),
                   
@@ -235,15 +261,28 @@ ui <- fluidPage(
                   ######################
                   tabPanel(
                     title = "Aggregated output",
+                    hr(),
                     
-                    # macc plot
-                    #plotOutput(outputId = "row_agf_macc"),
+                    # macc plots
+                    h4(HTML("Aggregate marginal abatement cost curve (crop-wise)")),
+                    plotOutput(outputId = "ag_macc_crop"),
+                    hr(),
+                    h4(HTML("Aggregate marginal abatement cost curve (system-wise)")),
+                    plotOutput(outputId = "ag_macc_sys"),
+                    hr(),
                     
                     # map
+                    h4(HTML("Aggregate spatial marginal abatement cost & rate")),
+                    plotOutput(outputId = "ag_map"),
+                    hr(),
                     
-                    # table
-                    #h4(HTML("b")),
-                    #tableOutput(outputId = "b"),
+                    # tables
+                    h4(HTML("Aggregate output data (crop-wise)")),
+                    tableOutput(outputId = "ag_table_crop"),
+                    hr(),
+                    h4(HTML("Aggregate output data (system-wise)")),
+                    tableOutput(outputId = "ag_table_sys"),
+                    hr()
                     
                   )
       )
@@ -264,6 +303,67 @@ server <- function(input, output) {
                         agf_ag = read_rds("app-baseline-simulations/agf-ag.rds"))
   
   #########################
+  # aggregate / global options
+  #########################
+  
+  # run all simulations
+  observeEvent(input$run_all, {
+    
+    # row
+    sim$row_agf <- build_row_agf(felling_age = input$row_agf_felling_age,
+                                 row_spacing = input$row_agf_row_spacing,
+                                 discount_rate = input$discount_rate * 10^-2) %>%
+      cheap_scale(input$row_agf_uptake * 10^-2)
+    
+    # shelter belts
+    sim$sb_agf <- build_sb_agf(spp_short = input$sb_agf_spp,
+                               felling_age = input$sb_agf_felling_age,
+                               discount_rate = input$discount_rate * 10^-2) %>%
+      even_scale(input$sb_agf_uptake * 10^-2)
+    
+    # fenceline
+    sim$fl_agf <- build_fl_agf(felling_age = input$fl_agf_felling_age,
+                               discount_rate = input$discount_rate * 10^-2) %>%
+      cheap_scale(input$fl_agf_uptake  * 10^-2)
+    
+    # hedges
+    sim$hdg_agf <- build_hdg_agf(discount_rate = input$discount_rate * 10^-2,
+                                 applies_to = input$hdg_agf_crop_spp) %>%
+      cheap_scale(input$hdg_agf_uptake * 10^-2)
+    
+    # aggregate
+    sim$agf_ag <- bind_rows(list(`Row agroforestry` = sim$row_agf,
+                                 Shelterbelts = sim$sb_agf,
+                                 `Fenceline planting` = sim$fl_agf,
+                                 `Hedge expansion` = sim$hdg_agf),
+                            .id = "sys_type")
+    
+  })
+  
+  # maccs
+  output$ag_macc_crop <- renderPlot({
+    build_macc_plot(sim$agf_ag)
+  })
+  
+  output$ag_macc_sys <- renderPlot({
+    build_agmacc_plot(sim$agf_ag)
+  })
+  
+  # maps
+  output$ag_map <- renderPlot({
+    build_paired_map(sim$agf_ag)
+  })
+  
+  # tables
+  output$ag_table_crop <- renderTable({
+    get_descriptives(sim$agf_ag, "crop")
+  })
+  
+  output$ag_table_sys <- renderTable({
+    get_descriptives(sim$agf_ag, "sys_type")
+  })
+  
+  #########################
   # row agroforestry
   #########################
   
@@ -273,6 +373,13 @@ server <- function(input, output) {
                                  row_spacing = input$row_agf_row_spacing,
                                  discount_rate = input$discount_rate * 10^-2) %>%
       cheap_scale(input$row_agf_uptake * 10^-2)
+    
+    # re-aggregate
+    sim$agf_ag <- bind_rows(list(`Row agroforestry` = sim$row_agf,
+                                 Shelterbelts = sim$sb_agf,
+                                 `Fenceline planting` = sim$fl_agf,
+                                 `Hedge expansion` = sim$hdg_agf),
+                            .id = "sys_type")
   })
   
   # plots
@@ -280,7 +387,14 @@ server <- function(input, output) {
     build_macc_plot(sim$row_agf)
   })
   
-  # tables
+  output$row_agf_map <- renderPlot({
+    build_paired_map(sim$row_agf)
+  })
+  
+  # table
+  output$row_agf_table <- renderTable({
+    get_descriptives(sim$row_agf, "crop")
+  })
   
   #########################
   # shelter belt agroforestry
@@ -292,11 +406,27 @@ server <- function(input, output) {
                                felling_age = input$sb_agf_felling_age,
                                discount_rate = input$discount_rate * 10^-2) %>%
       even_scale(input$sb_agf_uptake * 10^-2)
+    
+    # re-aggregate
+    sim$agf_ag <- bind_rows(list(`Row agroforestry` = sim$row_agf,
+                                 Shelterbelts = sim$sb_agf,
+                                 `Fenceline planting` = sim$fl_agf,
+                                 `Hedge expansion` = sim$hdg_agf),
+                            .id = "sys_type")
   })
   
   # plots
   output$sb_agf_macc <- renderPlot({
     build_macc_plot(sim$sb_agf)
+  })
+  
+  output$sb_agf_map <- renderPlot({
+    build_paired_map(sim$sb_agf)
+  })
+  
+  # table
+  output$sb_agf_table <- renderTable({
+    get_descriptives(sim$sb_agf, "crop")
   })
   
   #########################
@@ -308,11 +438,27 @@ server <- function(input, output) {
     sim$fl_agf <- build_fl_agf(felling_age = input$fl_agf_felling_age,
                                discount_rate = input$discount_rate * 10^-2) %>%
       cheap_scale(input$fl_agf_uptake  * 10^-2)
+    
+    # re-aggregate
+    sim$agf_ag <- bind_rows(list(`Row agroforestry` = sim$row_agf,
+                                 Shelterbelts = sim$sb_agf,
+                                 `Fenceline planting` = sim$fl_agf,
+                                 `Hedge expansion` = sim$hdg_agf),
+                            .id = "sys_type")
   })
   
   # plots
   output$fl_agf_macc <- renderPlot({
     build_macc_plot(sim$fl_agf)
+  })
+  
+  output$fl_agf_map <- renderPlot({
+    build_paired_map(sim$fl_agf)
+  })
+  
+  # table
+  output$fl_agf_table <- renderTable({
+    get_descriptives(sim$fl_agf, "crop")
   })
   
   #########################
@@ -324,11 +470,27 @@ server <- function(input, output) {
     sim$hdg_agf <- build_hdg_agf(discount_rate = input$discount_rate * 10^-2,
                                  applies_to = input$hdg_agf_crop_spp) %>%
       cheap_scale(input$hdg_agf_uptake * 10^-2)
+    
+    # re-aggregate
+    sim$agf_ag <- bind_rows(list(`Row agroforestry` = sim$row_agf,
+                                 Shelterbelts = sim$sb_agf,
+                                 `Fenceline planting` = sim$fl_agf,
+                                 `Hedge expansion` = sim$hdg_agf),
+                            .id = "sys_type")
   })
   
   # plots
   output$hdg_agf_macc <- renderPlot({
     build_macc_plot(sim$hdg_agf)
+  })
+  
+  output$hdg_agf_map <- renderPlot({
+    build_paired_map(sim$hdg_agf)
+  })
+  
+  # table
+  output$hdg_agf_table <- renderTable({
+    get_descriptives(sim$hdg_agf, "crop")
   })
   
 }
