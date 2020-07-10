@@ -2,11 +2,26 @@
 library(tidyverse)
 
 #####################################
-# filter crop functions
+# filter crop function
 #####################################
 filter_crops <- function(df, applies_to){
   df %>%
     filter(crop %in% applies_to)
+}
+
+#####################################
+# filter DA function
+#####################################
+filter_da <- function(df, da = c("England", "Scotland", "Wales", "Northern Ireland")){
+  da <- tibble(name = c("England", "Scotland", "Wales", "Northern Ireland"),
+               num = 1:4) %>%
+    filter(name %in% da) %>%
+    pull(num)
+  
+  df <- df %>%
+    filter(da_num %in% da)
+  
+  return(df)
 }
 
 #####################################
