@@ -259,6 +259,7 @@ row_env$add_abatement <- function(df, felling_age){
 # wrapper function
 #####################################
 build_row_agf <- function(felling_age, row_spacing, discount_rate,
+                          da = c("England", "Scotland", "Wales", "Northern Ireland"),
                           applies_to = c("barley",
                                          "cereals_other",
                                          "oil_crops_other",
@@ -272,6 +273,7 @@ build_row_agf <- function(felling_age, row_spacing, discount_rate,
   
   read_rds("simulation-base-data/crop-base-data.rds") %>%
     filter_crops(applies_to) %>%
+    filter_da(da = da) %>%
     row_env$add_tree_data(felling_age) %>%
     row_env$scale_system(row_spacing) %>%
     row_env$add_crop_impacts(row_spacing) %>%

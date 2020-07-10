@@ -103,6 +103,7 @@ hdg_env$calc_mac <- function(df){
 # wrapper function
 #####################################
 build_hdg_agf <- function(discount_rate,
+                          da = c("England", "Scotland", "Wales", "Northern Ireland"),
                           applies_to = c("barley",
                                          "cereals_other",
                                          "oil_crops_other",
@@ -116,12 +117,10 @@ build_hdg_agf <- function(discount_rate,
   
   read_rds("simulation-base-data/crop-base-data.rds") %>%
     filter_crops(applies_to) %>%
+    filter_da(da = da) %>%
     hdg_env$add_boundary_data() %>%
     hdg_env$add_hedge_costs(discount_rate) %>%
     hdg_env$add_abatement() %>%
     hdg_env$calc_mac() %>%
     return()
 }
-
-
-

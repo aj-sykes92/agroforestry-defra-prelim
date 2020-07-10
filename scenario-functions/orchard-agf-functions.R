@@ -102,6 +102,7 @@ orch_env$add_agf_margins <- function(df, felling_age, discount_rate) {
 
 # wrapper function
 build_orch_agf <- function(row_spacing, discount_rate, felling_age = 50,
+                           da = c("England", "Scotland", "Wales", "Northern Ireland"),
                            applies_to = c("barley",
                                           "cereals_other",
                                           "oil_crops_other",
@@ -116,6 +117,7 @@ build_orch_agf <- function(row_spacing, discount_rate, felling_age = 50,
   read_rds("simulation-base-data/crop-base-data.rds") %>%
     drop_na(orchard_prodindex) %>%
     filter_crops(applies_to) %>%
+    filter_da(da = da) %>%
     orch_env$add_tree_data(felling_age) %>%
     row_env$scale_system(row_spacing) %>%
     orch_env$add_crop_impacts(row_spacing) %>%

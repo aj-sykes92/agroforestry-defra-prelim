@@ -157,6 +157,7 @@ build_sb_agf <- function(spp_short,
                          belt_spacing = 250,
                          length = 180,
                          width = 10,
+                         da = c("England", "Scotland", "Wales", "Northern Ireland"),
                          applies_to = c("barley",
                                         "cereals_other",
                                         "oil_crops_other",
@@ -173,6 +174,7 @@ build_sb_agf <- function(spp_short,
   
   read_rds("simulation-base-data/crop-base-data.rds") %>%
     filter_crops(applies_to) %>%
+    filter_da(da = da) %>%
     sb_env$add_tree_data(spp_short, felling_age) %>%
     sb_env$scale_system(belt_spacing, width, length) %>%
     sb_env$add_crop_impacts() %>%

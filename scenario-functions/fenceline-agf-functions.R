@@ -71,19 +71,21 @@ fl_env$add_crop_impacts <- function(df) {
 # wrapper function
 #####################################
 build_fl_agf <- function(felling_age, row_spacing, discount_rate,
-                          applies_to = c("barley",
-                                         "cereals_other",
-                                         "oil_crops_other",
-                                         "pasture",
-                                         "pulses_other",
-                                         "rapeseed",
-                                         "wheat")
+                         da = c("England", "Scotland", "Wales", "Northern Ireland"),
+                         applies_to = c("barley",
+                                        "cereals_other",
+                                        "oil_crops_other",
+                                        "pasture",
+                                        "pulses_other",
+                                        "rapeseed",
+                                        "wheat")
 ) {
   
   source("scenario-functions/univ-functions.R")
   
   read_rds("simulation-base-data/crop-base-data.rds") %>%
     filter_crops(applies_to) %>%
+    filter_da(da = da) %>%
     row_env$add_tree_data(felling_age) %>%
     fl_env$scale_system() %>%
     fl_env$add_crop_impacts() %>%
