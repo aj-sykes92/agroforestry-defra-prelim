@@ -28,11 +28,17 @@ source("scenario-functions/hedge-functions.R")
 Dat_hdg <- build_hdg_agf(discount_rate = 0.035) %>%
   cheap_scale(0.1)
 
+# orchards
+source("scenario-functions/orchard-agf-functions.R")
+Dat_orch <- build_orch_agf(row_spacing = 30, discount_rate = 0.035) %>%
+  cheap_scale(0.1)
+
 # aggregate
 Dat_ag <- bind_rows(list(`Row agroforestry` = Dat_row,
                          Shelterbelts = Dat_sb,
                          `Fenceline planting` = Dat_fl,
-                         `Hedge expansion` = Dat_hdg),
+                         `Hedge expansion` = Dat_hdg,
+                         `Row orchards` = Dat_orch),
                     .id = "sys_type")
 
 
@@ -43,4 +49,5 @@ write_rds(Dat_row, "app-baseline-simulations/row-agf.rds")
 write_rds(Dat_sb, "app-baseline-simulations/sb-agf.rds")
 write_rds(Dat_fl, "app-baseline-simulations/fl-agf.rds")
 write_rds(Dat_hdg, "app-baseline-simulations/hdg-agf.rds")
+write_rds(Dat_orch, "app-baseline-simulations/orch-agf.rds")
 write_rds(Dat_ag, "app-baseline-simulations/agf-ag.rds")

@@ -135,8 +135,8 @@ even_scale <- function(df, area_frac){
 #####################################
 build_agmacc_plot <- function(df){
 
-  measure_colours <-  RColorBrewer::brewer.pal(4, "Pastel1") # can change up if desired
-  names(measure_colours) <- c("Row agroforestry", "Shelterbelts", "Fenceline planting", "Hedge expansion")
+  measure_colours <-  RColorBrewer::brewer.pal(5, "Pastel1") # can change up if desired
+  names(measure_colours) <- c("Row agroforestry", "Shelterbelts", "Fenceline planting", "Hedge expansion", "Row orchards")
   
   scc <- 66.1
   

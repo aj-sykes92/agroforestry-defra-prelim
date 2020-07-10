@@ -19,7 +19,6 @@ Dat_row3 <- build_row_agf(felling_age = 60, row_spacing = 10, discount_rate = 0.
 Dat_row3 %>% pull(mac_gbp_tco2) %>% summary()
 
 ##########################
-
 # shelter belt agroforestry
 ##########################
 source("scenario-functions/shelter-belt-functions.R")
@@ -47,7 +46,13 @@ Dat_fl1 <- build_fl_agf(felling_age = 60, discount_rate = 0.035)
 ##########################
 source("scenario-functions/hedge-functions.R")
 Dat_hdg1 <- build_hdg_agf(discount_rate = 0.035)
+
+
 ##########################
+# orchard agroforestry
+##########################
+source("scenario-functions/orchard-agf-functions.R")
+Dat_orch1 <- build_orch_agf(row_spacing = 30, discount_rate = 0.035)
 
 ##########################
 # plots
@@ -103,6 +108,14 @@ Dat_hdg1 %>%
 
 ggsave("output-plots/uk-full-macc-hedges-035-dr.png", width = 8, height = 5)
 
+# orchards
+Dat_orch1 %>%
+  build_macc_plot() +
+  labs(title = "UK MAC curve for row orchards",
+       subtitle = "30m row spacing, 3.5% DR")
+
+ggsave("output-plots/uk-full-macc-orchards-30m-spacing-035-dr.png", width = 8, height = 5)
+
 ##########################
 # UK MACC maps
 ##########################
@@ -139,7 +152,8 @@ Dat_hdg1 %>%
 Dat_ag <- bind_rows(list(Intercropping = cheap_scale(Dat_row1, 0.1),
                          Shelterbelts = even_scale(Dat_sb1, 0.1),
                          `Fenceline tree planting` = cheap_scale(Dat_fl1, 0.1),
-                         `Hedge expansion` = cheap_scale(Dat_hdg1, 0.1)),
+                         `Hedge expansion` = cheap_scale(Dat_hdg1, 0.1),
+                         `Row orchards` = cheap_scale(Dat_orch1, 0.1)),
                     .id = "sys_type")
 
 Dat_ag %>%
