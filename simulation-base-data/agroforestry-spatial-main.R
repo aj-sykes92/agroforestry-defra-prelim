@@ -32,6 +32,9 @@ Ras_crop_minfrac <- raster(find_onedrive(dir = bigdata_repo, path = "Created ras
 Ras_past_soc <- raster(find_onedrive(dir = bigdata_repo, path = "Created rasters/UK-pasture-SOC-tonnes-ha-10km-CLC-SG250-WGS84.tif"))
 Ras_crop_soc <- raster(find_onedrive(dir = bigdata_repo, path = "Created rasters/UK-crop-SOC-tonnes-ha-10km-CLC-SG250-WGS84.tif"))
 
+# fruit yield (for orchard yield index)
+Ras_fruityield <- raster(find_onedrive(dir = bigdata_repo, path = "MapSpam data/Yield/yield_fruit_temperate.tif"))
+
 # soil characteristics
 Brk_soil <- stack(
   raster(find_onedrive(dir = bigdata_repo, path = "SoilGrids 5km/Sand content/Fixed/SNDPPT_M_sl4_5km_ll.tif")), # sand %
@@ -111,6 +114,10 @@ Ras_pastarea <- Ras_pastarea %>% crop(Shp_UK) %>% mask(Shp_UK)
 Ras_pastyield <- Ras_pastyield %>% crop(Shp_UK) %>% mask(Shp_UK)
 Ras_past_workable <- Ras_past_workable %>% crop(Shp_UK) %>% mask(Shp_UK)
 
+# crop fruityield raster and convert to index
+Ras_fruityield <- Ras_fruityield %>% crop(Shp_UK) %>% mask(Shp_UK)
+Ras_fruityield <- Ras_fruityield / cellStats(Ras_fruityield, mean)
+
 # resample, crop and mask GHI raster
 Ras_solar <- Ras_solar %>%
   resample(Brk_soil[[1]])
@@ -137,10 +144,10 @@ rm(Ras_temp, Ras_sc, Ras_wa, Ras_ni)
 #Brk_crop <- stack(Brk_soil, Ras_crop_minfrac, Ras_pastyield, Ras_past_workable, Brk_croparea, Brk_cropyield) # includes pasture so as to be able to include lowland pasture here
 #Brk_pasture <- stack(Brk_soil, Ras_past_minfrac, Ras_pastarea, Ras_pastyield, Ras_past_workable)
 
-Brk_main <- stack(Brk_soil, Brk_clim, Ras_da, Ras_solar, Ras_crop_minfrac, Ras_past_minfrac, Ras_crop_soc, Ras_past_soc, Ras_pastarea, Ras_pastyield, Ras_uplandyield, Ras_past_workable, Brk_croparea, Brk_cropyield)
+Brk_main <- stack(Brk_soil, Brk_clim, Ras_da, Ras_solar, Ras_fruityield, Ras_crop_minfrac, Ras_past_minfrac, Ras_crop_soc, Ras_past_soc, Ras_pastarea, Ras_pastyield, Ras_uplandyield, Ras_past_workable, Brk_croparea, Brk_cropyield)
 
 # remove all preliminary/original variables
-rm(Ras_past_minfrac, Ras_crop_minfrac, Ras_pastarea, Ras_pastyield, Ras_uplandyield, Ras_past_workable, Brk_croparea, Brk_cropyield, Brk_soil, Brk_clim)
+rm(Ras_past_minfrac, Ras_crop_minfrac, Ras_pastarea, Ras_pastyield, Ras_uplandyield, Ras_past_workable, Brk_croparea, Brk_cropyield, Brk_soil, Brk_clim, Ras_da, Ras_solar, Ras_fruityield)
 
 #####################################
 # build crop base data frame
@@ -167,6 +174,7 @@ Dat_crop <- Dat_crop %>%
          clay = CLYPPT_M_sl4_5km_ll,
          pH = PHIHOX_M_sl4_5km_ll,
          ghi = GHI,
+         orchard_prodindex = yield_fruit_temperate,
          min_frac_crop = UK.crop.fraction.not.under.peat.10km.CLC.based.WGS84, # use this for pasture too since we're focusing on lowland/tilled pasture
          min_frac_grass = UK.pasture.fraction.not.under.peat.10km.CLC.based.WGS84,
          soc_crop = UK.crop.SOC.tonnes.ha.10km.CLC.SG250.WGS84,
