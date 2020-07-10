@@ -4,6 +4,7 @@ source("scenario-functions/row-agf-functions.R")
 source("scenario-functions/shelter-belt-functions.R")
 source("scenario-functions/fenceline-agf-functions.R")
 source("scenario-functions/hedge-functions.R")
+source("scenario-functions/orchard-agf-functions.R")
 
 # source utility functions
 source("scenario-functions/univ-functions.R")
@@ -15,7 +16,7 @@ ui <- fluidPage(
   # app theme and styling
   theme = shinythemes::shinytheme("lumen"),
   shinyWidgets::chooseSliderSkin("Nice"),
-  shinyWidgets::setSliderColor(rep("#8FBC8F", 9), 1:9),
+  shinyWidgets::setSliderColor(rep("#8FBC8F", 11), 1:11),
   
   # busy spinner
   shinybusy::add_busy_spinner(position = "top-right", height = "80px", width = "80px"),
@@ -156,6 +157,27 @@ ui <- fluidPage(
       actionButton(inputId = "run_hdg_agf",
                    label = "Update hedge simulation"),
       
+      # break
+      hr(),
+      
+      #########################
+      # orchard agroforestry
+      #########################
+      titlePanel(title = "Row orchards"),
+      
+      # inputs
+      sliderInput(inputId = "orch_agf_row_spacing",
+                  label =  "Inter-row spacing (m)",
+                  min = 10, max = 40, value = 30, step = 1),
+      
+      sliderInput(inputId = "orch_agf_uptake",
+                  label = "Measure uptake (%)",
+                  min = 1, max = 100, value = 10, step = 1),
+      
+      # update
+      actionButton(inputId = "run_orch_agf",
+                   label = "Update row orchard simulation")
+      
     ),
     
     # main panel for outputs
@@ -264,6 +286,30 @@ ui <- fluidPage(
                     hr()
                     
                   ),
+
+                  ######################
+                  # orchards
+                  ######################
+                  tabPanel(
+                    title = "Row orchards",
+                    hr(),
+                    
+                    # macc plot
+                    h4(HTML("Marginal abatement cost curve")),
+                    plotOutput(outputId = "orch_agf_macc"),
+                    hr(),
+                    
+                    # map
+                    h4(HTML("Spatial marginal abatement cost & rate")),
+                    plotOutput(outputId = "orch_agf_map"),
+                    hr(),
+                    
+                    # table
+                    h4(HTML("Simulation output data")),
+                    tableOutput(outputId = "orch_agf_table"),
+                    hr()
+                    
+                  ),
                   
                   ######################
                   # aggregated output
@@ -309,6 +355,7 @@ server <- function(input, output) {
                         fl_agf = read_rds("app-baseline-simulations/fl-agf.rds"),
                         sb_agf = read_rds("app-baseline-simulations/sb-agf.rds"),
                         hdg_agf = read_rds("app-baseline-simulations/hdg-agf.rds"),
+                        orch_agf = read_rds("app-baseline-simulations/orch-agf.rds"),
                         agf_ag = read_rds("app-baseline-simulations/agf-ag.rds"))
   
   #########################
@@ -335,16 +382,23 @@ server <- function(input, output) {
                                discount_rate = input$discount_rate * 10^-2) %>%
       cheap_scale(input$fl_agf_uptake  * 10^-2)
     
+    
     # hedges
     sim$hdg_agf <- build_hdg_agf(discount_rate = input$discount_rate * 10^-2,
                                  applies_to = input$hdg_agf_crop_spp) %>%
       cheap_scale(input$hdg_agf_uptake * 10^-2)
     
+    # orchards
+    sim$fl_agf <- build_fl_agf(row_spacing = input$orch_agf_row_spacing,
+                               discount_rate = input$discount_rate * 10^-2) %>%
+      cheap_scale(input$orch_agf_uptake  * 10^-2)
+    
     # aggregate
     sim$agf_ag <- bind_rows(list(`Row agroforestry` = sim$row_agf,
                                  Shelterbelts = sim$sb_agf,
                                  `Fenceline planting` = sim$fl_agf,
-                                 `Hedge expansion` = sim$hdg_agf),
+                                 `Hedge expansion` = sim$hdg_agf,
+                                 `Row orchards` = sim$orch_agf),
                             .id = "sys_type")
     
   })
@@ -389,7 +443,8 @@ server <- function(input, output) {
     sim$agf_ag <- bind_rows(list(`Row agroforestry` = sim$row_agf,
                                  Shelterbelts = sim$sb_agf,
                                  `Fenceline planting` = sim$fl_agf,
-                                 `Hedge expansion` = sim$hdg_agf),
+                                 `Hedge expansion` = sim$hdg_agf,
+                                 `Row orchards` = sim$orch_agf),
                             .id = "sys_type")
   })
   
@@ -423,7 +478,8 @@ server <- function(input, output) {
     sim$agf_ag <- bind_rows(list(`Row agroforestry` = sim$row_agf,
                                  Shelterbelts = sim$sb_agf,
                                  `Fenceline planting` = sim$fl_agf,
-                                 `Hedge expansion` = sim$hdg_agf),
+                                 `Hedge expansion` = sim$hdg_agf,
+                                 `Row orchards` = sim$orch_agf),
                             .id = "sys_type")
   })
   
@@ -456,7 +512,8 @@ server <- function(input, output) {
     sim$agf_ag <- bind_rows(list(`Row agroforestry` = sim$row_agf,
                                  Shelterbelts = sim$sb_agf,
                                  `Fenceline planting` = sim$fl_agf,
-                                 `Hedge expansion` = sim$hdg_agf),
+                                 `Hedge expansion` = sim$hdg_agf,
+                                 `Row orchards` = sim$orch_agf),
                             .id = "sys_type")
   })
   
@@ -489,7 +546,8 @@ server <- function(input, output) {
     sim$agf_ag <- bind_rows(list(`Row agroforestry` = sim$row_agf,
                                  Shelterbelts = sim$sb_agf,
                                  `Fenceline planting` = sim$fl_agf,
-                                 `Hedge expansion` = sim$hdg_agf),
+                                 `Hedge expansion` = sim$hdg_agf,
+                                 `Row orchards` = sim$orch_agf),
                             .id = "sys_type")
   })
   
@@ -505,6 +563,40 @@ server <- function(input, output) {
   # table
   output$hdg_agf_table <- renderTable({
     get_descriptives(sim$hdg_agf, "crop")
+  },
+  sanitize.text.function = function(x) x)
+  
+  #########################
+  # orchards
+  #########################
+  
+  # sim run
+  observeEvent(input$run_orch_agf, {
+    sim$orch_agf <- build_orch_agf(row_spacing = input$orch_agf_row_spacing,
+                                   discount_rate = input$discount_rate * 10^-2) %>%
+      cheap_scale(input$orch_agf_uptake * 10^-2)
+    
+    # re-aggregate
+    sim$agf_ag <- bind_rows(list(`Row agroforestry` = sim$row_agf,
+                                 Shelterbelts = sim$sb_agf,
+                                 `Fenceline planting` = sim$fl_agf,
+                                 `Hedge expansion` = sim$hdg_agf,
+                                 `Row orchards` = sim$orch_agf),
+                            .id = "sys_type")
+  })
+  
+  # plots
+  output$orch_agf_macc <- renderPlot({
+    build_macc_plot(sim$orch_agf)
+  })
+  
+  output$orch_agf_map <- renderPlot({
+    build_paired_map(sim$orch_agf)
+  })
+  
+  # table
+  output$orch_agf_table <- renderTable({
+    get_descriptives(sim$orch_agf, "crop")
   },
   sanitize.text.function = function(x) x)
   
