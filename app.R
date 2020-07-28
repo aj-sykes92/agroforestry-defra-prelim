@@ -24,7 +24,7 @@ ui <- fluidPage(
   # app title
   titlePanel("Marginal Abatement Cost Model for Agroforestry in the United Kingdom"),
   # app subtitle
-  h4(HTML("Prepared for Defra project <i>Clean Growth through Sustainable intensification</i>")),
+  h4(HTML("Prepared for Defra project <i>Clean Growth through Sustainable Intensification</i>")),
   
   # app in sidebar-panel-main-panel layout 
   sidebarLayout(
@@ -336,9 +336,13 @@ ui <- fluidPage(
                     plotOutput(outputId = "ag_macc_sys"),
                     hr(),
                     
-                    # map
+                    # maps
                     h4(HTML("Aggregate spatial marginal abatement cost & rate")),
                     plotOutput(outputId = "ag_map"),
+                    hr(),
+                    
+                    h4(HTML("Spatial distribution of measure cost-effectiveness (system-wise)")),
+                    plotOutput(outputId = "sys_map"),
                     hr(),
                     
                     # tables
@@ -435,6 +439,10 @@ server <- function(input, output) {
   # maps
   output$ag_map <- renderPlot({
     build_paired_map(sim$agf_ag)
+  })
+  
+  output$sys_map <- renderPlot({
+    build_sys_map(sim$agf_ag)
   })
   
   # tables

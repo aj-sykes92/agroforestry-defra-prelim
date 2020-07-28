@@ -185,6 +185,35 @@ build_ab_map <- function(df){
 }
 
 #####################################
+# aggreagate abatement map function
+#####################################
+build_sys_map <- function(df, abatement_floor = 0.1){
+  
+  measure_colours <-  RColorBrewer::brewer.pal(5, "Pastel1") # can change up if desired
+  names(measure_colours) <- c("Row agroforestry", "Shelterbelts", "Fenceline planting", "Hedge expansion", "Row orchards")
+  
+  Shp_UK <- raster::shapefile(find_onedrive(dir = "GIS data repository", path = "DA shapefile/GBR_adm_shp/GBR_adm1.shp"))
+  
+  df %>%
+    group_by(x, y, sys_type) %>%
+    summarise(co2_tyear = sum(co2_tyear),
+              totrev_gbp = sum(totrev_gbp),
+              .groups = "drop") %>%
+    mutate(mac_gbp_tco2 = -totrev_gbp / co2_tyear) %>%
+    group_by(x, y) %>%
+    mutate(co2_frac = co2_tyear / sum(co2_tyear)) %>%
+    filter(co2_frac >= abatement_floor) %>%
+    filter(mac_gbp_tco2 == min(mac_gbp_tco2)) %>%
+    ggplot() +
+    geom_raster(aes(x = x, y = y, fill = sys_type)) +
+    geom_polygon(data = Shp_UK, aes(x = long, y = lat, group = group), colour = "black", fill = NA, size = 0.5) +
+    labs(fill = "") +
+    scale_fill_manual(values = measure_colours) +
+    coord_quickmap() +
+    theme_void()
+}
+
+#####################################
 # descriptives function
 #####################################
 get_descriptives <- function(df, grouping_vars = NULL){
