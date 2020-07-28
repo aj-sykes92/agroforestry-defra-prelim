@@ -15,7 +15,8 @@ row_env$add_tree_data <- function(df, felling_age){
   
   # add in tree spp to df based on soil type
   df <- df %>%
-    mutate(spp = ifelse(clay > 25, "OK", "SAB")) # plant oak on soils with > 25% clay
+    #mutate(spp = ifelse(clay > 25, "OK", "SAB")) # plant oak on soils with > 25% clay
+    mutate(spp = "SAB") # added in response to Mark B critique -- OK is an odd choice
   
   # nest df
   Dat_nest <- row_agf_data %>%
