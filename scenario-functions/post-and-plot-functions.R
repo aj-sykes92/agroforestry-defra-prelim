@@ -116,7 +116,7 @@ build_paired_map <- function(df){
 #####################################
 # scaling functions
 #####################################
-cheap_scale <- function(df, area_frac){
+cheap_scale <- function(df, area_frac) {
   df %>%
     arrange(mac_gbp_tco2) %>%
     mutate(area_cumfrac = cumsum(area_ha) / sum(area_ha)) %>%
@@ -124,10 +124,15 @@ cheap_scale <- function(df, area_frac){
     select(x, y, da_num, crop, area_ha, yield_tha, yield_tha_agf, area_impact, co2_tyear:mac_gbp_tco2)
 }
 
-even_scale <- function(df, area_frac){
+even_scale <- function(df, area_frac) {
   df %>%
     select(x, y, da_num, crop, area_ha, yield_tha, yield_tha_agf, area_impact, co2_tyear:mac_gbp_tco2) %>%
     mutate_at(vars(c(area_ha, co2_tyear, totrev_gbp)), funs(. * area_frac))
+}
+
+impose_cost_ceiling <- function(df, cost_ceiling) {
+  df %>%
+    filter(mac_gbp_tco2 <= cost_ceiling)
 }
 
 #####################################

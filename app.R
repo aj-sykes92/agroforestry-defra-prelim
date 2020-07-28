@@ -16,7 +16,7 @@ ui <- fluidPage(
   # app theme and styling
   theme = shinythemes::shinytheme("lumen"),
   shinyWidgets::chooseSliderSkin("Nice"),
-  shinyWidgets::setSliderColor(rep("#8FBC8F", 11), 1:11),
+  shinyWidgets::setSliderColor(rep("#8FBC8F", 12), 1:12),
   
   # busy spinner
   shinybusy::add_busy_spinner(position = "top-right", height = "80px", width = "80px"),
@@ -41,6 +41,10 @@ ui <- fluidPage(
       sliderInput(inputId = "discount_rate",
                   label = "Discount rate (%)",
                   min = 0.1, max = 10, value = 3.5, step = 0.1),
+      
+      sliderInput(inputId = "cost_ceiling",
+                  label = HTML("Cost-effectiveness ceiling (£ tonne CO<sub>2</sub>-eq<sup>-1</sup>)"),
+                  min = -100, max = 500, value = 500, step = 1),
       
       selectInput(inputId = "dev_adm",
                   label = "Select regions for simulation",
@@ -376,33 +380,38 @@ server <- function(input, output) {
                                  row_spacing = input$row_agf_row_spacing,
                                  discount_rate = input$discount_rate * 10^-2,
                                  da = input$dev_adm) %>%
-      cheap_scale(input$row_agf_uptake * 10^-2)
+      cheap_scale(input$row_agf_uptake * 10^-2) %>%
+      impose_cost_ceiling(input$cost_ceiling)
     
     # shelter belts
     sim$sb_agf <- build_sb_agf(spp_short = input$sb_agf_spp,
                                felling_age = input$sb_agf_felling_age,
                                discount_rate = input$discount_rate * 10^-2,
                                da = input$dev_adm) %>%
-      even_scale(input$sb_agf_uptake * 10^-2)
+      even_scale(input$sb_agf_uptake * 10^-2) %>%
+      impose_cost_ceiling(input$cost_ceiling)
     
     # fenceline
     sim$fl_agf <- build_fl_agf(felling_age = input$fl_agf_felling_age,
                                discount_rate = input$discount_rate * 10^-2,
                                da = input$dev_adm) %>%
-      cheap_scale(input$fl_agf_uptake  * 10^-2)
+      cheap_scale(input$fl_agf_uptake  * 10^-2) %>%
+      impose_cost_ceiling(input$cost_ceiling)
     
     
     # hedges
     sim$hdg_agf <- build_hdg_agf(discount_rate = input$discount_rate * 10^-2,
                                  applies_to = input$hdg_agf_crop_spp,
                                  da = input$dev_adm) %>%
-      cheap_scale(input$hdg_agf_uptake * 10^-2)
+      cheap_scale(input$hdg_agf_uptake * 10^-2) %>%
+      impose_cost_ceiling(input$cost_ceiling)
     
     # orchards
     sim$orch_agf <- build_orch_agf(row_spacing = input$orch_agf_row_spacing,
                                    discount_rate = input$discount_rate * 10^-2,
                                    da = input$dev_adm) %>%
-      cheap_scale(input$orch_agf_uptake  * 10^-2)
+      cheap_scale(input$orch_agf_uptake  * 10^-2) %>%
+      impose_cost_ceiling(input$cost_ceiling)
     
     # aggregate
     sim$agf_ag <- bind_rows(list(`Row agroforestry` = sim$row_agf,
@@ -449,7 +458,8 @@ server <- function(input, output) {
                                  row_spacing = input$row_agf_row_spacing,
                                  discount_rate = input$discount_rate * 10^-2,
                                  da = input$dev_adm) %>%
-      cheap_scale(input$row_agf_uptake * 10^-2)
+      cheap_scale(input$row_agf_uptake * 10^-2) %>%
+      impose_cost_ceiling(input$cost_ceiling)
     
     # re-aggregate
     sim$agf_ag <- bind_rows(list(`Row agroforestry` = sim$row_agf,
@@ -485,7 +495,8 @@ server <- function(input, output) {
                                felling_age = input$sb_agf_felling_age,
                                discount_rate = input$discount_rate * 10^-2,
                                da = input$dev_adm) %>%
-      even_scale(input$sb_agf_uptake * 10^-2)
+      even_scale(input$sb_agf_uptake * 10^-2) %>%
+      impose_cost_ceiling(input$cost_ceiling)
     
     # re-aggregate
     sim$agf_ag <- bind_rows(list(`Row agroforestry` = sim$row_agf,
@@ -520,7 +531,8 @@ server <- function(input, output) {
     sim$fl_agf <- build_fl_agf(felling_age = input$fl_agf_felling_age,
                                discount_rate = input$discount_rate * 10^-2,
                                da = input$dev_adm) %>%
-      cheap_scale(input$fl_agf_uptake  * 10^-2)
+      cheap_scale(input$fl_agf_uptake  * 10^-2) %>%
+      impose_cost_ceiling(input$cost_ceiling)
     
     # re-aggregate
     sim$agf_ag <- bind_rows(list(`Row agroforestry` = sim$row_agf,
@@ -555,7 +567,8 @@ server <- function(input, output) {
     sim$hdg_agf <- build_hdg_agf(discount_rate = input$discount_rate * 10^-2,
                                  applies_to = input$hdg_agf_crop_spp,
                                  da = input$dev_adm) %>%
-      cheap_scale(input$hdg_agf_uptake * 10^-2)
+      cheap_scale(input$hdg_agf_uptake * 10^-2) %>%
+      impose_cost_ceiling(input$cost_ceiling)
     
     # re-aggregate
     sim$agf_ag <- bind_rows(list(`Row agroforestry` = sim$row_agf,
@@ -590,7 +603,8 @@ server <- function(input, output) {
     sim$orch_agf <- build_orch_agf(row_spacing = input$orch_agf_row_spacing,
                                    discount_rate = input$discount_rate * 10^-2,
                                    da = input$dev_adm) %>%
-      cheap_scale(input$orch_agf_uptake * 10^-2)
+      cheap_scale(input$orch_agf_uptake * 10^-2) %>%
+      impose_cost_ceiling(input$cost_ceiling)
     
     # re-aggregate
     sim$agf_ag <- bind_rows(list(`Row agroforestry` = sim$row_agf,
