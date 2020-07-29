@@ -1,0 +1,208 @@
+---
+title: "Agroforestry Fiche Refinement"
+subtitle: "Prepared for Defra project *Clean Growth through Sustainable Intensification*"
+author: "Dr Alasdair Sykes"
+date: "28/07/2020"
+output: pdf_document
+bibliography: /Users/alasdair/Documents/bibtex-and-csl/library.bib
+csl: /Users/alasdair/Documents/bibtex-and-csl/styles-master/elsevier-harvard2.csl
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(messages = FALSE)
+knitr::opts_chunk$set(warnings = FALSE)
+
+# set discount rate as global var
+dr <- 0.035
+
+
+```
+
+## 1. Overview
+
+This document comprises a refinement to the agroforestry fiche submitted to the Defra Clean Growth through Sustainable Intensification project in June 2019. This document details:
+
+1. Salient elements of the original model
+2. Feedback and requests for refinement made in response to the original fiche and model
+3. Methods followed to enact corresponding refinements to the model methodology
+4. Results from the refined model
+
+## 2. Summary of original fiche
+
+The original agroforestry fiche written for this project summarised the extant literature on agroforestry in the context of GHG abatement, and presented estimated marginal abatement potential and costs for this measure based on a modelled system derived from the literature.
+
+For this original modelled system — and given the wide uncertainties associated with aspects of the measure cost and abatement rates — a Monte Carlo simulated-based uncertainty modelling approach was adopted. The following were considered as a source of uncertainty in the modelled marginal abatement cost:
+
+1. Below-ground C sequestration. Minimum and maximum values for the ranges reported in @Aertsens2013 were utilised.
+2. Biomass C sequestration and timber yield. Uncertainty in the yield classes reported in @Matthews2016 was assumed, and this directly related to uncertainty in biomass C sequestration reported by @West2012.
+3. Planting and maintenance costs. @Burgess2003 report a range of values for most cost categories; these ranges were used as stochastic variables in the simulation.
+4. Timber revenue. Variation in timber yield per tree and per hectare (resulting from uncertainty in yield class) was incorporated into the @Whiteman1991 price curve equation. In addition, the variability in timber price index in the period 1991—2017 was used to derive a stochastic scaling factor for data derived from the price curve, producing a randomly-placed estimate of the relative value of the timber in a fluctuating market.
+5. Crop yield impacts. Variability in the yield data reported by @Burgess2005 was used to scale the estimate of the crop yield impact induced by the agroforestry system.
+
+The modelled agroforestry system was assumed, in the original fiche, to be applied in a UK wheat system with a grain yield of 8.4 tonnes ha^-1^ and a gross margin of £796 ha^-1^. All one-off costs and revenues were annualised and discounted using a discount rate of 3.5%. A Monte Carlo simulation (10,000 samples, Mersenne seed = 2605) was run to estimate the impact of the defined uncertainties on the marginal abatement cost effectiveness of the specified agroforestry systems.
+
+## 3. Summary of refinements made to original model
+
+Based on feedback on the original fiche, this Monte Carlo model was revised in form and expanded substantially. The following elements were requested for inclusion in the update:
+
+1. Disaggregation of the measure into silvoarable and silvopastoral systems
+2. Inclusion of shelterbelts
+3. Inclusion of hedges
+4. Inclusion of orchards
+
+To incorporate these elements, the original, non-spatially specific Monte Carlo format was revised into a GIS-based spatial model. This allowed for the inclusion of spatial data detailing crop, soil and climate systems, and for spatial correlations between these data to be accounted for. Based on the new approach, further refinements were possible, including:
+
+1. Disaggregation of silvoarable systems into individual crop types
+2. Disaggregation of silvopastoral systems into separate upland and lowland (pasture) systems
+3. Inclusion of a fenceline tree planting agroforestry measure considered in the original fiche
+
+## 4. Construction of spatial modelling environment
+
+The GIS-based modelling environment was constructed based on a 5km resolution raster dataset. Spatial layers directly included in this model were:
+
+1. Soil data from @Hengl2017 detailing sand, silt and clay fractions, soil pH and soil organic carbon stocks.
+2. Crop data from the spatial production allocation model [@Fritz2015], detailing yields and area for key arable crops.
+3. CORINE Land Cover layer [@Buttner2017] detailing cropland and pasture extent.
+4. Average rainfall and temperature data [@Harris2014], and global horizontal irradiation (i.e. solar insolation) data [@WorldBank2019].
+
+Key data layers (e.g. soil organic carbon and pasture productivity) were processed at fine (100m) resolution before resampling to coarser resolution (5km) for application of the model. Pasture productivity was estimated based on a model from @Defra2017, with modifications for altitude and soil pH, as well as mean fertiliser application rate [@Defra2018]. It was assumed that no fertiliser was applied on upland grassland.
+
+An estimated potential net primary productivity (NPP) layer, both for above-ground (ANPP) and total (TNPP) was estimated according to a temperature and precipitation-based NPP model, applied spatially, sourced from @DelGrosso2008.
+
+Financial data for the crop and grassland systems was sourced from the @SAC2019 and used to calculate enterprise costs, revenue and gross margins for each enterprise and grid cell. For grassland-based enterprises, it was assumed that lowland grassland (pasture) was used for beef production, and uplands used for sheep production; enterprise margins were scaled according to stocking rates possible with estimated grassland DM yield per grid cell.
+
+The following sections detail the application of different agroforestry treatments within this spatial modelling environment.
+
+### 4.1. Intercropping with row agroforestry
+
+This system was translated with minimal modification from that simulated for the original fiche, though refined where necessary to reflect the difference in modelling environment. As in the original model, row-grown intercropped trees were cultivated for timber. This section details the assumptions and data sources used in the simulation of this system.
+
+#### Row agroforestry tree density and row spacing.
+A key variable in the literature-reported agroforestry systems is tree density; this effectively scales all associated elements of the system (e.g. sequestration potential, crop yield impacts, costs, timber production, etc.). This parameter was kept flexible in the spatial model (with values from 10–40m possible), with a typical value of 30m between rows chosen to parameterise the system reported in this fiche.
+
+#### Row agroforestry tree species.
+The reviewed literature suggested deciduous trees would be most suitable for implementation in an agroforestry setting. Based on a choice of growth data for deciduous species [@Matthews2016], and a variety of soils data, the sycamore, ash, and birch growth path was selected as most appropriate. This growth path also best represents other suitable candidates for agroforestry systems (e.g. chestnut, aspen).
+
+#### Agroforestry system duration and yield.
+Optimal yield duration is variable, and this parameter was kept flexible in the model, with a felling age of 60 years chosen to parameterise the system reported in this fiche. Agroforestry system yield was estimated based primarily on the yield classes reported in @West2012 and the Forestry Commission’s Forest Yield Model [@Matthews2016]; these yield classes were selected from on the basis of a spatially explicit estimate of tree ANPP [@DelGrosso2008].
+
+#### Below-ground CO~2~ sequestration potential.
+Estimates of below-ground sequestration potential vary considerably; one of the major underlying causes of this variation appears to be differences in tree density. Per-tree estimates of below-ground CO2 sequestration were derived from values reported by @Aertsens2013, and standardised to tree densities for different treatments.
+
+#### Biomass CO~2~ sequestration potential.
+Estimates of biomass sequestration by trees following the SAB (sycamore, ash and birch) and OK (oak) growth paths were extracted from the Forestry Commission’s Carbon Lookup Tables [@West2012]. These values were standardised for tree density per hectare to reflect agroforestry inter- and intra-row spacings using data from @Matthews2016. Intra-row tree spacings were set at the equivalent spacing at age of maximum mean annual increment (MAI) from the yield tables [@Matthews2016].
+
+#### Tree planting and maintenance costs.
+Costs associated with implementing and maintaining the agroforestry system were extracted from @Burgess2003. These costs were either given per tree or per unit planted area; where systems differed in this respect the costs were scaled to reflect this.
+
+#### Tree timber yield and timber sale revenue.
+Tree timber yield was calculated according to selected yield classes [@Matthews2016], and scaled to reflect agroforestry tree densities. Timber yield revenue was calculated according to the price-curve equation defined by @Whiteman1991; the model output was scaled to reflect inflation and changes in the timber price indices since its parameterisation.
+
+##### Crop area and yield impacts.
+The impact on crop area was calculated based on the in-field row spacings, and an assumed 2m alley below each tree row (Burgess et al., 2003). Impacts to crop yield in the planted area resulting from the presence of trees in the cropping system were estimated based on the raw data reported by @Burgess2005; this was scaled to reflect differing row spacings according to scaling factors derived from data reported by @Chirko1996.
+
+#### Applicability.
+It was assumed that row agroforestry with intercropping would be possible in all arable cropping systems bar vegetables and potatoes; these were excluded from the analysis due to their very high costs and revenue per hectare, together with uncertainty about yield impacts. In grassland systems, this agroforestry type was deemed possible in lowland pasture, but not applicable in uplands.
+
+### 4.2. Shelter belts
+This system was created de novo for this refinement in response to a specific request. Shelter belts are typically used in agricultural systems to provide shelter from the elements, especially wind, for crops and livestock [@Caborn1957; @SAC2019]. This section details the assumptions employed.
+
+#### Shelter belt agroforestry wooded area parameterisation.
+Based on typical practice, and to provide contrast to row intercropping, it was determined that the wooded area created by shelter belt agroforestry implementation would undergo minimal maintenance and would be harvested for biomass at end-of-life. Based on discussion from @Caborn1957, the optimal planting spacing was chosen to be tighter for livestock systems, and looser for crops; livestock systems benefit most from less permeable windbreaks for direct shelter, whereas crop systems benefit most from wind-speed-reducing but more permeable windbreaks [@Palmer1997].
+
+#### Shelter belt tree species and felling age.
+Given the minimal modification from forestry conditions required for implementation of shelter belts, the availability of data with which to parameterise tree growth was comparatively high by contrast to row agroforestry. Minimal consideration was also required regarding aspects of tree growth such as apical dominance. It was therefore possible to include the following tree species in the analysis of shelter belt agroforestry:
+
+1. Beech
+2. Oak
+3. Sycamore
+4. Ash
+5. Birch
+6. Scots pine
+7. Sitka spruce
+
+The species (and corresponding growth path) was kept as a flexible parameter in the model. Felling age was also kept flexible and may be adjusted (from 35–80 years) to better represent optimal ages for different species. The system presented in this fiche is based on the sycamore, ash and birch growth path, felled at 60 years, given that species such as birch are both native to the UK and hardy to a variety of conditions.
+
+#### Shelter belt biomass yield and biomass CO~2~ sequestration potential.
+Given that minimal management was assumed, biomass yield was directly linked to spatially modelled TNPP estimates based on the @DelGrosso2008 model. To provide an estimate of CO~2~ sequestration and biomass yield, this TNPP value was linked to corresponding estimates from @West2012 and @Matthews2016.
+
+#### Below-ground CO~2~ sequestration potential.
+Estimates of below-ground sequestration were scaled according to spatially- and  system-explicit estimates of soil organic carbon, based on spatial data layers from @Hengl2017 and @Buttner2017. These were adjusted to reflect land use change using C stock change factors from the @IPCC2019 refinement.
+
+#### Shelter belt costs and revenue.
+Costs associated with implementing the shelter belt were extracted from @SAC2019. These costs were adjusted for tree planting density and the shelterbelt perimeter length; the latter was used to scale fencing costs, which were adjusted to reflect differing requirements for uplands (deer fencing) and lowlands (stock fencing). Felled trees were assumed to be sold as biomass (i.e. not as timber) and wood price was taken from @SAC2019.
+
+#### Crop and livestock area and yield impacts.
+The impact on crop area was calculated based on belt size and shape, which was informed by the discussions on belt design in @Caborn1957, @Gregory1995 and @Palmer1997. Belt size parameters were kept flexible in the model, though typical values (length = 180m, width = 10m, spacing = 250m) were implemented for the analysis reported in this fiche. Based also on these reports, a crop yield improvement of +5% for arable crops, and livestock mortality reductions of -1% and -3% for pasture and upland respectively were added to the model.
+
+### Applicability.
+It was assumed that shelter belts would be possible in all arable and pasture/upland systems, barring vegetables and potatoes; these were excluded from the analysis due to their very high costs and revenue per hectare, together with uncertainty about yield impacts.
+
+### 4.3. Fenceline agroforestry
+Fenceline planting of trees was included in the original fiche as an alternative to row intercropping. It is included here on the same basis.
+
+The assumptions associated with this measure are identical to those used in row intercropping, with the following modifications:
+
+1. It is assumed that there will be no crop area or yield impacts resulting from the planting of trees along a fenceline.
+2. Planted row length is assumed to be equivalent to the amount of free fenceline (excluding that combined with walls, hedges, or existing trees) available for a given land use type.
+3.	Free fenceline length is calculated based on data from the Countryside Survey [@Carey2008]. This was disaggregated by devolved administration and land use type (grassland/arable) and spatially joined to the modelling environment to preserve this disaggregation.
+
+As with row intercropping, fenceline planting was simulated on all arable and pasture systems barring vegetables and potatoes.
+
+### 4.4. Hedgerows
+This system was created *de novo* for this refinement in response to a specific request. The system was also created with reference to similar work by the Centre for Ecology and Hydrology (CEH) to ensure parity.
+
+#### Above-ground biomass CO~2~ sequestration.
+In line with CEH assumptions, biomass sequestration was assumed to represent the net difference between the above-ground carbon stocks of non-shrubby grassland (2.8 tonnes C ha^-1^) and managed hedges (34.86 tonnes C ha^-1^). To integrate this into the spatial model, this estimate was scaled to reflect spatial differences in woody biomass TNPP across different regions.
+
+#### Costs of hedge implementation.
+Costs for hedge planting and annual maintenance (flailing) were sourced from @Nix2019. Hedges were assumed to have a lifetime of 20 years before replanting or extensive renovation was required @Barr1995. 
+
+#### Applicability.
+Hedge implementation was assumed to be possible on the same otherwise free fencelines identified via the @Carey2008 dataset for 4.3. Given the additional costs and challenges associated with stockproofing hedges @Nix2019, it was assumed that hedges would not offset the requirement for a stock fence. As with fenceline planting, it was assumed that hedge planting would not be possible on uplands.
+
+### 4.5. Row orchards
+This system was created *de novo* for this refinement in response to a specific request. The basis of this system was designed as a modification to **4.1** (row agroforestry), with the key assumption that the trees were grown for fruit production rather than timber. Unless specified in the following sections, assumptions for row orchards were the same as for **4.1**.
+
+#### Orchard type.
+While many types of fruit trees may be grown in Britain, apple orchards were selected for this modelling exercise as being the most broadly representative of British orchard production, and the most widely represented in the relevant literature [e.g. @Burgess2017].
+
+#### Tree growth paths.
+Data from @Matthews2016 suggested that the SAB (sycamore, ash and birch) growth path was the most representative for the majority of fruit trees, including apple trees.
+
+#### Distribution and yield.
+Spatial data on temperate fruit production and yield was sourced from the spatial production allocation model [@Fritz2015] and used to define the possible extent for row orchards, and the relative spatial yield of fruit production by apple trees. Actual yield (in kg tree^-1^) was scaled using data from @Woodward2019.
+
+#### Orchard cots and revenue.
+Annualised costs and revenue per tree were derived from @Burgess2017. This was scaled to agroforestry spacings using the existing data and modelling for row agroforestry (**4.1**). The lifetime of the system was set to 50 years [@Burgess2017].
+
+### 4.6. Aggregation of agroforestry systems
+Separate spatial analyses were run for each of the agroforestry system types (intercropping, shelter belts, fenceline planting and hedges). To aggregate the systems, it was assumed that they were each applied on 10% of available agricultural area, in line with specific direction for this refinement. However, given the heterogeneity engendered by the spatial model, it was necessary to select which 10% of land would receive each treatment. Two methods were defined by which this was done:
+
+Even scaling. Scaling a measure evenly meant taking the full range of grid cell + system pairings and scaling the measure to an even fraction of each. To follow this approach implies that there is no way of choosing precisely where the measure is applied.
+
+Cost-effective scaling. Scaling a measure cost-effectively meant applying the measure across the full range of grid cell + system pairings, but ordering these by cost-effectiveness (i.e. marginal abatement cost) and selecting the most cost effective fraction. To follow this approach implies that the measure can be applied precisely where it is most cost effective.
+
+In this model, shelter belt agroforestry was scaled evenly; this is because it is likely that there are many places where it is not possible or where the assumptions in this model would not hold; for example, in areas with substantial existing tree cover between fields or where wind exposure is minimal.  The other measures (intercropping, fenceline planting and hedges) were scaled cost-effectively, since there are fewer factors involved in these systems which the model does not explicitly capture.
+
+## 5. Results
+This section first presents the results of each measure individually (with 10% scaling assumptions), and finally presents the results of the 10%-scaled and aggregated measures following the process described in 4.5. MACC plots for raw (unscaled) individual measures are presented in Appendix 1.
+
+> Discounting: All systems presented in this section utilised a 3.5% discount rate to account for future earnings and costs.
+> Definitions: A measure is referred to as cost-negative if the discounted net annual cost is less than zero (i.e. the measure generates net revenue). A measure is referred to as cost-effective if the net annual cost is less than £66.10, the social cost of carbon [@Nordhaus2017].
+
+### 5.1. Row agroforestry
+
+```{r row_agf_setup}
+row_agf_args <- list(felling_age = 60, row_spacing = 30, discount_rate = dr)
+
+Dat_row <- build_row_agf(row_agf_ags)
+```
+
+The row agroforestry system comprised SAB (sycamore, ash, and birch) species, spaced at `r row_agf_args$`m and harvested for timber at 60 years. Approximately 26% of the agricultural area was planted with OK, with the remainder planted with SAB spp. The system produced approximately 1.5 million m3 of timber annually. Table 1 presents core model results for this measure.
+
+
+
+## References
+
