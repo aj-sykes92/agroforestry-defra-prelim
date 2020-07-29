@@ -216,7 +216,7 @@ build_sys_map <- function(df, abatement_floor = 0.1){
 #####################################
 # descriptives function
 #####################################
-get_descriptives <- function(df, grouping_vars = NULL){
+get_descriptives <- function(df, grouping_vars = NULL, for_app = T){
   
   # main descriptives
   df <- df %>%
@@ -249,12 +249,22 @@ get_descriptives <- function(df, grouping_vars = NULL){
   
   # rename
   blanks <- rep("", times = length(grouping_vars))
-  colnames(df) <- c(blanks, "Total applicable area (kha)", "Area change (kha)", "Area change (fractional)",
-                    "Production change (kt DM)", "Production change (fractional)",
-                    "Total net cost (£m)",
-                    "AP (kt CO<sub>2</sub> yr<sup>-1</sup>)",
-                    "AR (t CO<sub>2</sub> ha<sup>-1</sup> yr<sup>-1</sup>)",
-                    "MAC (£ tCO<sub>2</sub>-eq<sup>-1</sup>)")
+  
+  if(for_app) {
+    colnames(df) <- c(blanks, "Total applicable area (kha)", "Area change (kha)", "Area change (fractional)",
+                      "Production change (kt DM)", "Production change (fractional)",
+                      "Total net cost (£m)",
+                      "AP (kt CO<sub>2</sub> yr<sup>-1</sup>)",
+                      "AR (t CO<sub>2</sub> ha<sup>-1</sup> yr<sup>-1</sup>)",
+                      "MAC (£ tCO<sub>2</sub>-eq<sup>-1</sup>)")
+  } else {
+    colnames(df) <- c(grouping_vars, "Total applicable area (kha)", "Area change (kha)", "Area change (fractional)",
+                      "Production change (kt DM)", "Production change (fractional)",
+                      "Total net cost (£m)",
+                      "AP (kt CO~2~ y^-1^",
+                      "AR (t CO~2~ ha^-1^ yr^-1^)",
+                      "MAC (£ tCO~2~-eq^-1^)")
+  }
   
   return(df)
 }
