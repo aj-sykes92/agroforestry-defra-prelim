@@ -2,21 +2,36 @@
 title: "Agroforestry Fiche Refinement"
 subtitle: "Prepared for Defra project *Clean Growth through Sustainable Intensification*"
 author: "Dr Alasdair Sykes"
-date: "28/07/2020"
+date: "29/07/2020"
+fontsize: 10pt
 output: pdf_document
 bibliography: /Users/alasdair/Documents/bibtex-and-csl/library.bib
 csl: /Users/alasdair/Documents/bibtex-and-csl/styles-master/elsevier-harvard2.csl
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = FALSE)
-knitr::opts_chunk$set(messages = FALSE)
-knitr::opts_chunk$set(warnings = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
 
-# set discount rate as global var
+# set discount rate and uptake as global vars
 dr <- 0.035
+uptake <- 0.1
 
+# fig and table number tracking
+fig_no <- 1
+tab_no <- 1
 
+# source scenario functions
+source("scenario-functions/row-agf-functions.R")
+source("scenario-functions/shelter-belt-functions.R")
+source("scenario-functions/fenceline-agf-functions.R")
+source("scenario-functions/hedge-functions.R")
+source("scenario-functions/orchard-agf-functions.R")
+
+# source utility functions
+source("scenario-functions/univ-functions.R")
+source("scenario-functions/post-and-plot-functions.R")
 ```
 
 ## 1. Overview
@@ -172,7 +187,7 @@ While many types of fruit trees may be grown in Britain, apple orchards were sel
 Data from @Matthews2016 suggested that the SAB (sycamore, ash and birch) growth path was the most representative for the majority of fruit trees, including apple trees.
 
 #### Distribution and yield.
-Spatial data on temperate fruit production and yield was sourced from the spatial production allocation model [@Fritz2015] and used to define the possible extent for row orchards, and the relative spatial yield of fruit production by apple trees. Actual yield (in kg tree^-1^) was scaled using data from @Woodward2019.
+Spatial data on temperate fruit production and yield was sourced from the spatial production allocation model [@Fritz2015] and used to define the possible extent for row orchards, and the relative spatial yield of fruit production by apple trees. Actual yield (in kg tree^-1^) was scaled using data from @Woodward2010.
 
 #### Orchard cots and revenue.
 Annualised costs and revenue per tree were derived from @Burgess2017. This was scaled to agroforestry spacings using the existing data and modelling for row agroforestry (**4.1**). The lifetime of the system was set to 50 years [@Burgess2017].
@@ -195,14 +210,288 @@ This section first presents the results of each measure individually (with 10% s
 ### 5.1. Row agroforestry
 
 ```{r row_agf_setup}
-row_agf_args <- list(felling_age = 60, row_spacing = 30, discount_rate = dr)
 
-Dat_row <- build_row_agf(row_agf_ags)
+# setup
+row_agf_args <- list(felling_age = 60,
+                     row_spacing = 30)
+
+Dat_row_full <- build_row_agf(felling_age = row_agf_args$felling_age,
+                              row_spacing = row_agf_args$row_spacing,
+                              discount_rate = dr)
+
+# scale
+Dat_row <- Dat_row_full %>% cheap_scale(uptake)
+
+# million cubic m of timber produced per year
+# scaling manually to keep 1-off vars
+row_timb_m2 <- Dat_row_full %>%
+  arrange(mac_gbp_tco2) %>%
+  mutate(area_cumfrac = cumsum(area_ha) / sum(area_ha)) %>%
+  filter(area_cumfrac <= uptake) %>%
+  mutate(timbvol = vol_tree * ntrees) %>%
+  pull(timbvol) %>%
+  sum() *
+  1/row_agf_args$felling_age *
+  1 * 10^-6
+
+# output table
+row_agf_output <- Dat_row %>%
+  get_descriptives("crop", for_app = FALSE) %>%
+  rename(`Crop system` = crop)
+
 ```
 
-The row agroforestry system comprised SAB (sycamore, ash, and birch) species, spaced at `r row_agf_args$`m and harvested for timber at 60 years. Approximately 26% of the agricultural area was planted with OK, with the remainder planted with SAB spp. The system produced approximately 1.5 million m3 of timber annually. Table 1 presents core model results for this measure.
+The row agroforestry system comprised SAB (sycamore, ash, and birch) species, spaced at `r row_agf_args$row_spacing`m and harvested for timber at `r row_agf_args$felling_age` years. The system produced approximately `r round(row_timb_m2, 2)` million m^3^ of timber annually. Table `r tab_no` presents core model results for this measure.
 
+```{r row_agf_table}
+  knitr::kable(row_agf_output,
+               format = "pipe",
+               align = "r",
+               caption = paste0("Key indicator values for row agroforestry, cost-effectively scaled to ", uptake * 100, "% area."),
+               escape = FALSE)
+tab_no <- tab_no + 1
+```
 
+### 5.2 Shelter belt agroforestry
+
+```{r sb_agf_setup}
+
+# setup
+sb_agf_args <- list(spp_short = "SAB", felling_age = 60, discount_rate = dr)
+
+Dat_sb_full <- build_sb_agf(spp_short = sb_agf_args$spp_short,
+                            felling_age = sb_agf_args$felling_age,
+                            discount_rate = dr)
+
+# scale
+Dat_sb <- Dat_sb_full %>% even_scale(uptake)
+   
+# million cubic m of timber produced per year
+# scaling manually to keep 1-off vars
+sb_biomass_m2 <- Dat_sb_full %>%
+  mutate(woodvol = treevol_m3ha * planted_area_ha * 0.1) %>%
+  pull(woodvol) %>%
+  sum() *
+  1/sb_agf_args$felling_age *
+  1 * 10^-6
+
+# output table (scaled)
+sb_agf_output <- Dat_sb %>%
+  get_descriptives("crop", for_app = FALSE) %>%
+  rename(`Crop system` = crop)
+
+```
+
+The shelter belt agroforestry system was implemented using SAB species, and assumed harvest of the trees for biomass at 60 years. The dimensions of belts were 10m x 180m, and they were spaced at 250m intervals. The system produced approximately `r round(sb_biomass_m2, 2)` million m^3^ of biomass annually. Table `r tab_no` presents core results for this measure.
+
+```{r sb_agf_table}
+  knitr::kable(row_agf_output,
+               format = "pipe",
+               align = "r",
+               caption = paste0("Key indicator values for shelterbelt agroforestry, cost-effectively scaled to ", uptake * 100, "% area."),
+               escape = FALSE)
+tab_no <- tab_no + 1
+```
+
+### 5.3. Fenceline agroforestry
+
+```{r fl_agf_setup}
+
+# setup
+fl_agf_args <- list(felling_age = 60)
+
+Dat_fl_full <- build_fl_agf(felling_age = fl_agf_args$felling_age,
+                            discount_rate = dr)
+
+# scale
+Dat_fl <- Dat_fl_full %>% cheap_scale(uptake)
+
+# million cubic m of timber produced per year
+# scaling manually to keep 1-off vars
+fl_timb_m2 <- Dat_fl_full %>%
+  arrange(mac_gbp_tco2) %>%
+  mutate(area_cumfrac = cumsum(area_ha) / sum(area_ha)) %>%
+  filter(area_cumfrac <= uptake) %>%
+  mutate(timbvol = vol_tree * ntrees) %>%
+  pull(timbvol) %>%
+  sum() *
+  1/fl_agf_args$felling_age
+
+# output table
+fl_agf_output <- Dat_fl %>%
+  get_descriptives("crop", for_app = FALSE) %>%
+  rename(`Crop system` = crop)
+
+```
+
+The fenceline agroforestry system was implemented as occupying `r uptake * 100`% of space on otherwise unplanted fencelines. The system produced approximately `r round(fl_timb_m2, 2)` m^3^ of timber annually. Table `r tab_no` presents core results for this measure.
+
+```{r fl_agf_table}
+  knitr::kable(fl_agf_output,
+               format = "pipe",
+               align = "r",
+               caption = paste0("Key indicator values for fencline agroforestry, cost-effectively scaled to ", uptake * 100, "% area."),
+               escape = FALSE)
+tab_no <- tab_no + 1
+```
+
+### 5.4. Hedges
+
+```{r hdg_agf_setup}
+
+# setup
+
+Dat_hdg_full <- build_hdg_agf(discount_rate = dr)
+Dat_hdg <- Dat_hdg_full %>% cheap_scale(uptake)
+
+# output table
+hdg_agf_output <- Dat_hdg %>%
+  get_descriptives("crop", for_app = FALSE) %>%
+  rename(`Crop system` = crop)
+
+```
+
+Hedges were implemented on the same basis as fenceline agroforestry, with the system occupying `r uptake * 100`% of space on fencelines which had no other features attached (e.g. existing trees). Hedges did not impact the cropping system in this model, nor did they result in the production of saleable biomass. Table `r tab_no` presents core results for this measure.
+
+```{r hdg_agf_table}
+  knitr::kable(hdg_agf_output,
+               format = "pipe",
+               align = "r",
+               caption = paste0("Key indicator values for hedges, cost-effectively scaled to ", uptake * 100, "% area."),
+               escape = FALSE)
+tab_no <- tab_no + 1
+```
+
+### 5.5. Row orchards
+
+```{r orch_agf_setup}
+
+# setup
+orch_agf_args <- list(row_spacing = 30)
+
+Dat_orch_full <- build_orch_agf(row_spacing = orch_agf_args$row_spacing,
+                                discount_rate = dr)
+
+Dat_orch <- Dat_orch_full %>%
+  cheap_scale(uptake)
+
+# Mt of apples / year
+# scaling manually to keep 1-off vars
+orchyield <- Dat_orch_full %>%
+  arrange(mac_gbp_tco2) %>%
+  mutate(area_cumfrac = cumsum(area_ha) / sum(area_ha)) %>%
+  filter(area_cumfrac <= uptake) %>%
+  mutate(orchyield = orch_yield_tha * area_ha) %>%
+  pull(orchyield) %>%
+  sum() *
+  10^-6
+
+# round to nearest thousand
+#fl_timb_m2 <-  round(fl_timb_m2 * 10^-3, 0) * 10^3
+  
+
+# output table
+orch_agf_output <- Dat_orch %>%
+  get_descriptives("crop", for_app = FALSE) %>%
+  rename(`Crop system` = crop)
+
+```
+
+Orchards were implemented across `r uptake * 100`% of areas modelled as suitable for growing fruit [@Fritz2015]. The system produced approximately `r round(orchyield, 2)` million tonnes of fruit annually. Table `r tab_no` presents core results for this measure.
+
+```{r orch_agf_table}
+  knitr::kable(orch_agf_output,
+               format = "pipe",
+               align = "r",
+               caption = paste0("Key indicator values for hedges, cost-effectively scaled to ", uptake * 100, "% area."),
+               escape = FALSE)
+tab_no <- tab_no + 1
+```
+
+### 5.6. Aggregated agroforestry systems.
+
+Systems were aggregated following the `r uptake * 100`% scaling (evenly for shelterbelts, cost-effectively for row agroforestry, fenceline planting, hedges and orchards). Tables `r tab_no` and `r tab_no + 1` display the aggregated results for these systems.
+
+```{r ag_agf_setup}
+# aggregate
+Dat_ag <- bind_rows(list(`Row agroforestry` = Dat_row,
+                         Shelterbelts = Dat_sb,
+                         `Fenceline planting` = Dat_fl,
+                         `Hedge expansion` = Dat_hdg,
+                         `Row orchards` = Dat_orch),
+                    .id = "sys_type")
+
+# table outputs
+ag_agf_output_crop <- Dat_ag %>%
+  get_descriptives("crop", for_app = FALSE) %>%
+  rename(`Crop system` = crop)
+
+ag_agf_output_sys <- Dat_ag %>%
+  get_descriptives("sys_type", for_app = FALSE) %>%
+  mutate(sys_type = ifelse(sys_type == "Shelterbelts", "Shelter belts", sys_type)) %>% # added to fix table sizing issue
+  rename(Sytem = sys_type)
+
+# aggregated descriptives
+desc <- get_descriptives(Dat_ag, for_app = FALSE) %>% as.list()
+
+```
+
+```{r ag_agf_table_crop}
+  knitr::kable(ag_agf_output_crop,
+               format = "pipe",
+               align = "r",
+               caption = paste0("Key indicator values for hedges, cost-effectively scaled to ", uptake * 100, "% area."),
+               escape = FALSE)
+tab_no <- tab_no + 1
+```
+
+```{r ag_agf_table_sys}
+  knitr::kable(ag_agf_output_sys,
+               format = "pipe",
+               align = "r",
+               caption = paste0("Key indicator values for hedges, cost-effectively scaled to ", uptake * 100, "% area."),
+               escape = FALSE)
+tab_no <- tab_no + 1
+```
+
+Abatement rate varied widely across the country, with typical rates of around 1 tCO~2~ ha^-1^ (Fig. `r fig_no`). The most cost-effective abatement was spread quite widely — with the majority of potentially cost-negative options focused around the south-west of England and Wales — though pasture and uplands in the north and west of the country also appeared to have some potential for cost-effective abatement (Fig. `r fig_no`).
+
+``` {r paired_map_fig, fig.cap = "Marginal abatement cost and abatement rate for combined agroforestry measures, assuming uptake countrywide. AR is given in tonnes CO2 sequestered per hectare of agricultural land per year, MAC in 2019 GBP tonne CO~2~ sequestered^-1^."}
+Dat_ag %>%
+  build_paired_map()
+
+fig_no <- fig_no + 1
+```
+
+Combining the measures into a marginal abatement cost curve (MACC) demonstrated some overlap between agroforestry system types, with the range of marginal abatement costs for row orchards and shelterbelts spreading this measure across fenceline planting and some intercropping/row agroforestry) (Fig. `r fig_no`).
+
+The majority of abatement was realisable in lowland pasture systems via a combination of measures (Fig. `r fig_no + 1`). However, some cost-negative abatement potential came from the combination of row orchards and shelterbelts with arable cropping systems. Hedges did not appear to represent cost effective abatement in the majority of cases.
+
+```{r ag_agf_agmacc_fig, fig.height = 3, fig.cap = "Marginal abatement cost curve for combined agroforestry measures. Vertical bars represent individual crop + grid cell pairings. The dashed horizontal lines represent zero and the social cost of carbon [@Nordhaus2017]."}
+Dat_ag %>%
+  build_agmacc_plot() +
+  labs(y = expression('MAC (GBP tonne CO'[2]*'-eq'^{-1}*')')) # needs to be a shorter label for this plot size
+
+fig_no <- fig_no + 1
+```
+
+```{r ag_agf_macc_fig, fig.height = 3, fig.wieght = 7, fig.cap = "Crop-specific marginal abatement cost curve for combined agroforestry measures. Vertical bars represent individual crop + grid cell pairings. The dashed horizontal lines represent zero and the social cost of carbon [@Nordhaus2017]."}
+Dat_ag %>%
+  build_macc_plot() +
+  labs(y = expression('MAC (GBP tonne CO'[2]*'-eq'^{-1}*')')) # needs to be a shorter label for this plot size
+
+fig_no <- fig_no + 1
+```
+
+\newpage
+
+Overall, scaled to `r uptake * 100`% of available, applicable agricultural area, this combination of agroforestry measures has an abatement potential of `r desc[[7]] %>% round(0)` kt CO~2~ year^-1^ at an average cost of £`r desc[[9]] %>% round(2)` tCO~2~^-1^ and an abatement rate of `r desc[[8]] %>% round(1)` tCO~2~ ha^-1^. The overall net cost of implementing these measures would be £`r desc[[6]] %>% round(0)` million and would affect `r desc[[1]] %>% round(0)` kha of agricultural land. Approximately `r -desc[[2]] %>% round(0)` kha of this land would be taken out of production, and, due to orchard production, this would result in net crop production increases of of `r desc[[4]] %>% round(0)` kt DM (approximately `r desc[[5]] * 100`% of existing production) on the affected area.
+
+## Supplementary Materials
+
+This document is accompanied by a web application which allows the user to modify key assumptions of the models used in this fiche. The application is hosted at <https://alasdair-sykes.shinyapps.io/agroforestry-defra-prelim/>. Source code for both the web application and for this document is held at <https://github.com/aj-sykes92/agroforestry-defra-prelim>. For all enquiries relating to this work, please contact <alasdair.sykes@sruc.ac.uk>.
+
+\newpage
 
 ## References
 
