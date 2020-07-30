@@ -130,6 +130,17 @@ even_scale <- function(df, area_frac) {
     mutate_at(vars(c(area_ha, co2_tyear, totrev_gbp)), funs(. * area_frac))
 }
 
+# stratified cost-effective scaling
+cheap_strat_scale <- function(df, area_frac) {
+  df %>%
+    group_by(crop) %>%
+    arrange(mac_gbp_tco2) %>%
+    mutate(area_cumfrac = cumsum(area_ha) / sum(area_ha)) %>%
+    filter(area_cumfrac <= area_frac) %>%
+    ungroup() %>%
+    select(x, y, da_num, crop, area_ha, yield_tha, yield_tha_agf, area_impact, co2_tyear:mac_gbp_tco2)
+}
+
 impose_cost_ceiling <- function(df, cost_ceiling) {
   df %>%
     filter(mac_gbp_tco2 <= cost_ceiling)
@@ -261,9 +272,9 @@ get_descriptives <- function(df, grouping_vars = NULL, for_app = T){
     colnames(df) <- c(grouping_vars, "Total applicable area (kha)", "Area change (kha)", "Area change (fractional)",
                       "Production change (kt DM)", "Production change (fractional)",
                       "Total net cost (£m)",
-                      "AP (kt CO~2~ y^-1^",
+                      "AP (kt CO~2~ yr^-1^",
                       "AR (t CO~2~ ha^-1^ yr^-1^)",
-                      "MAC (£ tCO~2~-eq^-1^)")
+                      "CE (£ tCO~2~-eq^-1^)")
   }
   
   return(df)
