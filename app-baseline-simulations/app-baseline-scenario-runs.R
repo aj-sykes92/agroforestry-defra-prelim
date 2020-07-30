@@ -17,7 +17,7 @@ Dat_row <- build_row_agf(felling_age = 60, row_spacing = 30, discount_rate = 0.0
 # shelter belt agroforestry
 source("scenario-functions/shelter-belt-functions.R")
 Dat_sb <- build_sb_agf(spp_short = "SAB", felling_age = 60, discount_rate = 0.035) %>%
-  even_scale(0.1) %>%
+  cheap_strat_scale(0.1) %>%
   impose_cost_ceiling(500)
 
 # fenceline agroforestry
