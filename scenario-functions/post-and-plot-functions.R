@@ -196,14 +196,14 @@ build_ab_map <- function(df){
 }
 
 #####################################
-# aggreagate abatement map function
+# systemwise ce abatement map
 #####################################
 build_sys_map <- function(df, abatement_floor = 0.1){
   
   measure_colours <-  RColorBrewer::brewer.pal(5, "Pastel1") # can change up if desired
   names(measure_colours) <- c("Row agroforestry", "Shelterbelts", "Fenceline planting", "Hedge expansion", "Row orchards")
   
-  Shp_UK <- raster::shapefile(find_onedrive(dir = "GIS data repository", path = "DA shapefile/GBR_adm_shp/GBR_adm1.shp"))
+  shp <- read_rds("app-helper-data/uk-shp.rds")
   
   df %>%
     group_by(x, y, sys_type) %>%
@@ -217,7 +217,7 @@ build_sys_map <- function(df, abatement_floor = 0.1){
     filter(mac_gbp_tco2 == min(mac_gbp_tco2)) %>%
     ggplot() +
     geom_raster(aes(x = x, y = y, fill = sys_type)) +
-    geom_polygon(data = Shp_UK, aes(x = long, y = lat, group = group), colour = "black", fill = NA, size = 0.5) +
+    geom_polygon(data = shp, aes(x = long, y = lat, group = group), colour = "black", fill = NA, size = 0.5) +
     labs(fill = "") +
     scale_fill_manual(values = measure_colours) +
     coord_quickmap() +
