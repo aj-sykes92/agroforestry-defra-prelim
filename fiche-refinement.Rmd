@@ -2,8 +2,7 @@
 title: "Agroforestry Fiche Refinement"
 subtitle: "Prepared for Defra project *Clean Growth through Sustainable Intensification*"
 author: "Dr Alasdair Sykes"
-date: "29/07/2020"
-fontsize: 10pt
+date: "30/07/2020"
 output: pdf_document
 bibliography: /Users/alasdair/Documents/bibtex-and-csl/library.bib
 csl: /Users/alasdair/Documents/bibtex-and-csl/styles-master/elsevier-harvard2.csl
@@ -36,7 +35,7 @@ source("scenario-functions/post-and-plot-functions.R")
 
 ## 1. Overview
 
-This document comprises a refinement to the agroforestry fiche submitted to the Defra Clean Growth through Sustainable Intensification project in June 2019. This document details:
+This document comprises a refinement to the agroforestry fiche submitted to the Defra project *Clean Growth through Sustainable Intensification* in June 2019. This document details:
 
 1. Salient elements of the original model
 2. Feedback and requests for refinement made in response to the original fiche and model
@@ -45,9 +44,9 @@ This document comprises a refinement to the agroforestry fiche submitted to the 
 
 ## 2. Summary of original fiche
 
-The original agroforestry fiche written for this project summarised the extant literature on agroforestry in the context of GHG abatement, and presented estimated marginal abatement potential and costs for this measure based on a modelled system derived from the literature.
+The original agroforestry fiche written for this project summarised the extant literature on agroforestry in the context of GHG abatement, and presented estimated greenhouse gas mitigation and costs for this measure based on a modelled system derived from the literature.
 
-For this original modelled system — and given the wide uncertainties associated with aspects of the measure cost and abatement rates — a Monte Carlo simulated-based uncertainty modelling approach was adopted. The following were considered as a source of uncertainty in the modelled marginal abatement cost:
+For this original modelled system —-- and given the wide uncertainties associated with aspects of the measure cost and abatement rates —--- a Monte Carlo simulated-based uncertainty modelling approach was adopted. The following were considered as a source of uncertainty in the modelled abatement cost:
 
 1. Below-ground C sequestration. Minimum and maximum values for the ranges reported in @Aertsens2013 were utilised.
 2. Biomass C sequestration and timber yield. Uncertainty in the yield classes reported in @Matthews2016 was assumed, and this directly related to uncertainty in biomass C sequestration reported by @West2012.
@@ -55,18 +54,18 @@ For this original modelled system — and given the wide uncertainties associate
 4. Timber revenue. Variation in timber yield per tree and per hectare (resulting from uncertainty in yield class) was incorporated into the @Whiteman1991 price curve equation. In addition, the variability in timber price index in the period 1991—2017 was used to derive a stochastic scaling factor for data derived from the price curve, producing a randomly-placed estimate of the relative value of the timber in a fluctuating market.
 5. Crop yield impacts. Variability in the yield data reported by @Burgess2005 was used to scale the estimate of the crop yield impact induced by the agroforestry system.
 
-The modelled agroforestry system was assumed, in the original fiche, to be applied in a UK wheat system with a grain yield of 8.4 tonnes ha^-1^ and a gross margin of £796 ha^-1^. All one-off costs and revenues were annualised and discounted using a discount rate of 3.5%. A Monte Carlo simulation (10,000 samples, Mersenne seed = 2605) was run to estimate the impact of the defined uncertainties on the marginal abatement cost effectiveness of the specified agroforestry systems.
+The modelled agroforestry system was assumed, in the original fiche, to be applied in a UK wheat system with a grain yield of 8.4 tonnes ha^-1^ and a gross margin of £796 ha^-1^. All one-off costs and revenues were annualised and discounted using a discount rate of 3.5%. A Monte Carlo simulation (10,000 samples, Mersenne seed = 2605) was run to estimate the impact of the defined uncertainties on the cost effectiveness of the specified agroforestry systems.
 
 ## 3. Summary of refinements made to original model
 
-Based on feedback on the original fiche, this Monte Carlo model was revised in form and expanded substantially. The following elements were requested for inclusion in the update:
+Based on feedback on the original fiche, this model was revised in form and expanded substantially. The following elements were requested for inclusion in the update:
 
 1. Disaggregation of the measure into silvoarable and silvopastoral systems
 2. Inclusion of shelterbelts
 3. Inclusion of hedges
 4. Inclusion of orchards
 
-To incorporate these elements, the original, non-spatially specific Monte Carlo format was revised into a GIS-based spatial model. This allowed for the inclusion of spatial data detailing crop, soil and climate systems, and for spatial correlations between these data to be accounted for. Based on the new approach, further refinements were possible, including:
+To incorporate these elements, the original, non-spatially specific, Monte Carlo-based uncertainty format was revised into a GIS-based spatial model. This allowed for the inclusion of spatial data detailing crop, soil and climate systems, and for spatial correlations between these data to be accounted for. Based on the new approach, further refinements were possible, including:
 
 1. Disaggregation of silvoarable systems into individual crop types
 2. Disaggregation of silvopastoral systems into separate upland and lowland (pasture) systems
@@ -74,7 +73,7 @@ To incorporate these elements, the original, non-spatially specific Monte Carlo 
 
 ## 4. Construction of spatial modelling environment
 
-The GIS-based modelling environment was constructed based on a 5km resolution raster dataset. Spatial layers directly included in this model were:
+The GIS-based modelling environment was constructed based on a 5 $\times$ 5 km resolution raster dataset. Spatial layers directly included in this model were:
 
 1. Soil data from @Hengl2017 detailing sand, silt and clay fractions, soil pH and soil organic carbon stocks.
 2. Crop data from the spatial production allocation model [@Fritz2015], detailing yields and area for key arable crops.
@@ -88,6 +87,8 @@ An estimated potential net primary productivity (NPP) layer, both for above-grou
 Financial data for the crop and grassland systems was sourced from the @SAC2019 and used to calculate enterprise costs, revenue and gross margins for each enterprise and grid cell. For grassland-based enterprises, it was assumed that lowland grassland (pasture) was used for beef production, and uplands used for sheep production; enterprise margins were scaled according to stocking rates possible with estimated grassland DM yield per grid cell.
 
 The following sections detail the application of different agroforestry treatments within this spatial modelling environment.
+
+> Where model parameters are described as *flexible* in the following sections, this refers to the structure of the functions used to build the model. These flexible parameters are user-adjustable in the web application (see **Supplementary information**), and the default values employed here are reported in the results (section **5**).
 
 ### 4.1. Intercropping with row agroforestry
 
@@ -121,13 +122,13 @@ The impact on crop area was calculated based on the in-field row spacings, and a
 It was assumed that row agroforestry with intercropping would be possible in all arable cropping systems bar vegetables and potatoes; these were excluded from the analysis due to their very high costs and revenue per hectare, together with uncertainty about yield impacts. In grassland systems, this agroforestry type was deemed possible in lowland pasture, but not applicable in uplands.
 
 ### 4.2. Shelter belts
-This system was created de novo for this refinement in response to a specific request. Shelter belts are typically used in agricultural systems to provide shelter from the elements, especially wind, for crops and livestock [@Caborn1957; @SAC2019]. This section details the assumptions employed.
+This system was created *de novo* for this refinement in response to a specific request. Shelter belts are typically used in agricultural systems to provide shelter from the elements, especially wind, for crops and livestock [@Caborn1957; @SAC2019]. This section details the assumptions employed.
 
 #### Shelter belt agroforestry wooded area parameterisation.
 Based on typical practice, and to provide contrast to row intercropping, it was determined that the wooded area created by shelter belt agroforestry implementation would undergo minimal maintenance and would be harvested for biomass at end-of-life. Based on discussion from @Caborn1957, the optimal planting spacing was chosen to be tighter for livestock systems, and looser for crops; livestock systems benefit most from less permeable windbreaks for direct shelter, whereas crop systems benefit most from wind-speed-reducing but more permeable windbreaks [@Palmer1997].
 
 #### Shelter belt tree species and felling age.
-Given the minimal modification from forestry conditions required for implementation of shelter belts, the availability of data with which to parameterise tree growth was comparatively high by contrast to row agroforestry. Minimal consideration was also required regarding aspects of tree growth such as apical dominance. It was therefore possible to include the following tree species in the analysis of shelter belt agroforestry:
+Given the minimal modification from forestry conditions required for implementation of shelter belts, less consideration --- by contrast to row agroforestry --- was required regarding aspects of tree growth such as apical dominance. It was therefore possible to include the following tree species in the analysis of shelter belt agroforestry:
 
 1. Beech
 2. Oak
@@ -192,19 +193,22 @@ Spatial data on temperate fruit production and yield was sourced from the spatia
 #### Orchard cots and revenue.
 Annualised costs and revenue per tree were derived from @Burgess2017. This was scaled to agroforestry spacings using the existing data and modelling for row agroforestry (**4.1**). The lifetime of the system was set to 50 years [@Burgess2017].
 
-### 4.6. Aggregation of agroforestry systems
+### 4.6. Scaling and aggregation of agroforestry systems
 Separate spatial analyses were run for each of the agroforestry system types (intercropping, shelter belts, fenceline planting and hedges). To aggregate the systems, it was assumed that they were each applied on 10% of available agricultural area, in line with specific direction for this refinement. However, given the heterogeneity engendered by the spatial model, it was necessary to select which 10% of land would receive each treatment. Two methods were defined by which this was done:
 
-Even scaling. Scaling a measure evenly meant taking the full range of grid cell + system pairings and scaling the measure to an even fraction of each. To follow this approach implies that there is no way of choosing precisely where the measure is applied.
+#### Simple cost-effective scaling.
+Scaling a measure cost-effectively meant applying the measure across the full range of grid cell + system pairings, but ordering these by cost-effectiveness and selecting the most cost effective area fraction. To follow this approach implies that the measure can be applied precisely where it is most cost effective.
 
-Cost-effective scaling. Scaling a measure cost-effectively meant applying the measure across the full range of grid cell + system pairings, but ordering these by cost-effectiveness (i.e. marginal abatement cost) and selecting the most cost effective fraction. To follow this approach implies that the measure can be applied precisely where it is most cost effective.
+#### Stratified cost-effective scaling
+This approach works in the same way as cost-effective scaling, but the ordering and selection of area fractions is performed in within land use groups. To follow this approach implies that the cost-effectiveness of the measure is directly linked to the base crop or livestock production system in question, and that there are substantial links between the measure performance and base system. It also implies that there is more limited choice as to precisely where the measure is applied.
 
-In this model, shelter belt agroforestry was scaled evenly; this is because it is likely that there are many places where it is not possible or where the assumptions in this model would not hold; for example, in areas with substantial existing tree cover between fields or where wind exposure is minimal.  The other measures (intercropping, fenceline planting and hedges) were scaled cost-effectively, since there are fewer factors involved in these systems which the model does not explicitly capture.
+In this model, shelter belt agroforestry was scaled using stratified cost-effective scaling; this is because the impacts of this measure are very strongly linked to the base land use, and it is likely that there are regions where it is not possible or where the assumptions in this model would not hold; for example, in areas with substantial existing tree cover between fields or where wind exposure is minimal. Scaling this measure using simple cost-effective scaling would likely overestimate cost-effectiveness of uptake for this measure by assuming implementation on areas where it is already in use, or not possible or practical. The other measures (intercropping, fenceline planting, hedges and orchards) were scaled using simple cost-effective scaling, since there are fewer factors involved in these systems which the model does not explicitly capture.
 
 ## 5. Results
 This section first presents the results of each measure individually (with 10% scaling assumptions), and finally presents the results of the 10%-scaled and aggregated measures following the process described in 4.5. MACC plots for raw (unscaled) individual measures are presented in Appendix 1.
 
-> Discounting: All systems presented in this section utilised a 3.5% discount rate to account for future earnings and costs.
+> Discounting: All systems presented in this section utilised a `r dr * 100`% discount rate to account for future earnings and costs.
+
 > Definitions: A measure is referred to as cost-negative if the discounted net annual cost is less than zero (i.e. the measure generates net revenue). A measure is referred to as cost-effective if the net annual cost is less than £66.10, the social cost of carbon [@Nordhaus2017].
 
 ### 5.1. Row agroforestry
@@ -264,7 +268,7 @@ Dat_sb_full <- build_sb_agf(spp_short = sb_agf_args$spp_short,
                             discount_rate = dr)
 
 # scale
-Dat_sb <- Dat_sb_full %>% even_scale(uptake)
+Dat_sb <- Dat_sb_full %>% cheap_strat_scale(uptake)
    
 # million cubic m of timber produced per year
 # scaling manually to keep 1-off vars
@@ -285,7 +289,7 @@ sb_agf_output <- Dat_sb %>%
 The shelter belt agroforestry system was implemented using SAB species, and assumed harvest of the trees for biomass at 60 years. The dimensions of belts were 10m x 180m, and they were spaced at 250m intervals. The system produced approximately `r round(sb_biomass_m2, 2)` million m^3^ of biomass annually. Table `r tab_no` presents core results for this measure.
 
 ```{r sb_agf_table}
-  knitr::kable(row_agf_output,
+  knitr::kable(sb_agf_output,
                format = "pipe",
                align = "r",
                caption = paste0("Key indicator values for shelterbelt agroforestry, cost-effectively scaled to ", uptake * 100, "% area."),
@@ -324,7 +328,7 @@ fl_agf_output <- Dat_fl %>%
 
 ```
 
-The fenceline agroforestry system was implemented as occupying `r uptake * 100`% of space on otherwise unplanted fencelines. The system produced approximately `r round(fl_timb_m2, 2)` m^3^ of timber annually. Table `r tab_no` presents core results for this measure.
+The fenceline agroforestry system was implemented as occupying `r uptake * 100`% of space on otherwise unplanted fencelines. The system produced approximately `r (fl_timb_m2 / 1000) %>% round(0) * 1000` m^3^ of timber annually. Table `r tab_no` presents core results for this measure.
 
 ```{r fl_agf_table}
   knitr::kable(fl_agf_output,
@@ -454,20 +458,20 @@ tab_no <- tab_no + 1
 tab_no <- tab_no + 1
 ```
 
-Abatement rate varied widely across the country, with typical rates of around 1 tCO~2~ ha^-1^ (Fig. `r fig_no`). The most cost-effective abatement was spread quite widely — with the majority of potentially cost-negative options focused around the south-west of England and Wales — though pasture and uplands in the north and west of the country also appeared to have some potential for cost-effective abatement (Fig. `r fig_no`).
+Abatement rate varied widely across the country, with typical rates of around `r mean(Dat_ag$ar_tha) %>% round(1)` tCO~2~ ha^-1^ (Fig. `r fig_no`) for areas with abatement. The most cost-effective abatement was spread quite widely — with the majority of potentially cost-negative options focused around the south-west of England and Wales — though pasture and uplands in the north and west of the country also appeared to have some potential for cost-effective abatement (Fig. `r fig_no`).
 
-``` {r paired_map_fig, fig.cap = "Marginal abatement cost and abatement rate for combined agroforestry measures, assuming uptake countrywide. AR is given in tonnes CO2 sequestered per hectare of agricultural land per year, MAC in 2019 GBP tonne CO~2~ sequestered^-1^."}
+``` {r paired_map_fig, fig.cap = "Abatement cost and abatement rate for combined agroforestry measures, assuming uptake countrywide. AR is given in tonnes CO2 sequestered per hectare of agricultural land per year, MAC in 2019 GBP tonne CO~2~ sequestered^-1^."}
 Dat_ag %>%
   build_paired_map()
 
 fig_no <- fig_no + 1
 ```
 
-Combining the measures into a marginal abatement cost curve (MACC) demonstrated some overlap between agroforestry system types, with the range of marginal abatement costs for row orchards and shelterbelts spreading this measure across fenceline planting and some intercropping/row agroforestry) (Fig. `r fig_no`).
+Combining the measures into a marginal abatement cost curve (MACC) demonstrated some overlap between agroforestry system types, with the range of abatement costs for row orchards and shelterbelts spreading this measure across fenceline planting and some intercropping/row agroforestry) (Fig. `r fig_no`).
 
 The majority of abatement was realisable in lowland pasture systems via a combination of measures (Fig. `r fig_no + 1`). However, some cost-negative abatement potential came from the combination of row orchards and shelterbelts with arable cropping systems. Hedges did not appear to represent cost effective abatement in the majority of cases.
 
-```{r ag_agf_agmacc_fig, fig.height = 3, fig.cap = "Marginal abatement cost curve for combined agroforestry measures. Vertical bars represent individual crop + grid cell pairings. The dashed horizontal lines represent zero and the social cost of carbon [@Nordhaus2017]."}
+```{r ag_agf_agmacc_fig, fig.height = 3, fig.cap = "Marginal abatement cost curve for combined agroforestry measures. Vertical bars represent individual crop \times grid cell pairings. The dashed horizontal lines represent zero and the social cost of carbon [@Nordhaus2017]."}
 Dat_ag %>%
   build_agmacc_plot() +
   labs(y = expression('MAC (GBP tonne CO'[2]*'-eq'^{-1}*')')) # needs to be a shorter label for this plot size
@@ -485,13 +489,24 @@ fig_no <- fig_no + 1
 
 \newpage
 
+The spatial basis of this modelling also allows some estimation to be made of the geographical regions in which certain agroforestry measures are most cost effective (Fig. `r fig_no`). Given the challenges associated with scaling systems appropriately (see **4.6**), these estimates should be taken with a degree of caution, but may nonetheless be a useful indication of the spatial distribution of cost-effective measure implementation. To limit the influence of measures with limited local abatement potential, the data in Fig. `r fig_no` is first filtered to remove measures responsible for less than 10% of abatement in a given grid cell.
+
+```{r ag_agf_sys_map, fig.cap = "Estimation of cost-effective geographic distribution of measures."}
+Dat_ag %>%
+  build_sys_map()
+fig_no = fig_no + 1
+```
+
 Overall, scaled to `r uptake * 100`% of available, applicable agricultural area, this combination of agroforestry measures has an abatement potential of `r desc[[7]] %>% round(0)` kt CO~2~ year^-1^ at an average cost of £`r desc[[9]] %>% round(2)` tCO~2~^-1^ and an abatement rate of `r desc[[8]] %>% round(1)` tCO~2~ ha^-1^. The overall net cost of implementing these measures would be £`r desc[[6]] %>% round(0)` million and would affect `r desc[[1]] %>% round(0)` kha of agricultural land. Approximately `r -desc[[2]] %>% round(0)` kha of this land would be taken out of production, and, due to orchard production, this would result in net crop production increases of of `r desc[[4]] %>% round(0)` kt DM (approximately `r desc[[5]] * 100`% of existing production) on the affected area.
 
-## Supplementary Materials
+\newpage
+
+## Supplementary materials
 
 This document is accompanied by a web application which allows the user to modify key assumptions of the models used in this fiche. The application is hosted at <https://alasdair-sykes.shinyapps.io/agroforestry-defra-prelim/>. Source code for both the web application and for this document is held at <https://github.com/aj-sykes92/agroforestry-defra-prelim>. For all enquiries relating to this work, please contact <alasdair.sykes@sruc.ac.uk>.
 
-\newpage
+## Acknowledgements and funding
+The author would like to thank Vera Eory and Michael Macleod (Scotland's Rural College), Jess Oliver and Luke Spadavecchia (Defra) and Mark Broadmeadow (Forestry Commission) for contributions and feedback during the development of this analysis. This work was funded by **Defra** through the project *Clean Growth through Sustainable Intensification*.
 
 ## References
 
