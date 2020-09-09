@@ -5,7 +5,7 @@ output: html_document
 
 This application allows users to modify and interrogate the agroforestry analyses performed as part of the Defra project *Clean Growth through Sustainable Intensification*. These analyses were designed to assess the implementation cost and greenhouse gas abatement potential of agroforestry systems in the United Kingdom. This panel provides an overview of the application and instructions on its use.
 
-For the purposes of this analysis, the measure 'agroforestry' was broken into four sub-measures. These are:
+For the purposes of this analysis, the measure 'agroforestry' was broken into five sub-measures. These are:
 
 * **Row planting**. Planting trees for timber in rows throughout agricultural areas, with intercropping and/or livestock production between the rows.
 
@@ -15,14 +15,15 @@ For the purposes of this analysis, the measure 'agroforestry' was broken into fo
 
 * **Hedge expansion**. Expanding existing hedges to parts of the field boundary currently occupied only by fences.
 
+* **Row orchards**. Planting fruit trees rows throughout agricultural areas with cropping between the rows (similar to **row agroforestry**) and harvesting the fruit crop in addition to understory production.
 
 #### Input controls 
-Each of these four sub-measures has its own set of inputs which may be modified by the user; the controls for these inputs are located in the left-hand sidebar. To improve performance, the app does not automatically update when an input is changed; the user may change multiple inputs, and subsequently use an action button to prompt the server to re-run the simulation and update the app.
+Each of these five sub-measures has its own set of inputs which may be modified by the user; the controls for these inputs are located in the left-hand sidebar. To improve performance, the app does not automatically update when an input is changed; the user may change multiple inputs, and subsequently use an action button to prompt the server to re-run the simulation and update the app.
 
-There are separate *update* buttons for each of the four sub-measures to support individual changes; these are found in the respective input panels for each measure. There is also a universal *update* button under the **Global options** panel; whenever this is used, all of the simulations in the application are re-calculated.
+There are separate *update* buttons for each of the five sub-measures to support individual changes; these are found in the respective input panels for each measure. There is also a universal *update* button under the **Global options** panel; whenever this is used, all of the simulations in the application are re-calculated.
 
 #### Outputs 
-Outputs are displayed in the main panel. Each of the four sub-measures has its own panel, with outputs specific to that simulation displayed. In addition, the app contains an **Aggregated output** panel, which displays combined data for all of the four sub-measures together.
+Outputs are displayed in the main panel. Each of the five sub-measures has its own panel, with outputs specific to that simulation displayed. In addition, the app contains an **Aggregated output** panel, which displays combined data for all of the five sub-measures together.
 
 &nbsp;
 <hr />
