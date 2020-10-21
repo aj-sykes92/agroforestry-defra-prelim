@@ -392,7 +392,7 @@ server <- function(input, output) {
                                felling_age = input$sb_agf_felling_age,
                                discount_rate = input$discount_rate * 10^-2,
                                da = input$dev_adm) %>%
-      check_strat_scale(input$sb_agf_uptake * 10^-2) %>%
+      cheap_strat_scale(input$sb_agf_uptake * 10^-2) %>%
       impose_cost_ceiling(input$cost_ceiling)
     
     # fenceline
